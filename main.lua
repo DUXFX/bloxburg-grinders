@@ -1,4 +1,8 @@
--- utils (these are pasted from wally)
+if getgenv().work_con then
+    getgenv().work_con:Disconnect()    
+end
+
+-- utils
 local utils = {} do
     function utils:find_from(path, start, wait_for_child)
         assert(typeof(path) == "string", "utils:find_from | expected \"path\" to be a string.")
@@ -60,11 +64,10 @@ end
 -- variables
 local player = utils:find_from("Players.LocalPlayer");
 local modules = utils:wait_for("PlayerScripts.Modules", player);
-local job_module_path = utils:wait_for("JobHandler", modules);
-local job_module = require(job_module_path);
+local job_module = require(utils:wait_for("JobHandler", modules));
 local pathfinding_service = game:GetService("PathfindingService");
 
--- pathfinding (pasted from roblox)
+-- pathfinding
 local pathfinding = {} do
     local path = pathfinding_service:CreatePath({
         AgentRadius = 3,
@@ -269,21 +272,21 @@ local hairdressers = {
                                 continue;
                             end
                             getconnections(style_next_button.Activated)[1].Function();
-                            task.wait(0.025);
+                            task.wait(0.1);
                         end
-                        task.wait(0.02);
+                        task.wait(0.1);
                         for i=1, order_idx[2] do
                             if i==1 then
                                 continue;
                             end
                             getconnections(color_next_button.Activated)[1].Function();
-                            task.wait(0.025);
+                            task.wait(0.1);
                         end
-                        task.wait(0.02);
+                        task.wait(0.1);
                         getconnections(done_button.Activated)[1].Function();
                         repeat task.wait() until workstation.Occupied.Value ~= npc
                         repeat task.wait() until tostring(workstation.Occupied.Value) == "StylezHairStudioCustomer"
-                        task.wait(0.1);
+                        task.wait(1);
                     else
                         self:complete_order();
                     end
@@ -293,13 +296,36 @@ local hairdressers = {
     end
 end
 
-if not job_module.IsWorking() then
-    hairdressers:start_shift();
-end
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/samerop/Aero/main/source.lua"))()
 
-hairdressers:get_workstation();
+library:CreateWindow({
+	Title = "Bloxburg Grinders"
+});
 
-while job_module.IsWorking() do
-    hairdressers:complete_order();
-    task.wait(1);
-end
+local hair_tab = library:CreateTab({
+	Name = "Hairdressers"
+});
+
+local hair_farm_enabled = false;
+hair_farm_toggle = library:CreateToggle({
+	Text = "Farming: OFF",
+	Tab = hair_tab,
+	Callback = function(state)
+		hair_farm_toggle.Text = `Farming: {state and "ON" or "OFF"}`;
+		hair_farm_enabled = state;
+		if hair_farm_enabled then
+			if not job_module.IsWorking() then
+				hairdressers:start_shift();
+			end
+
+			hairdressers:get_workstation();
+
+			task.spawn(function()
+				while hair_farm_enabled do
+					hairdressers:complete_order();
+					task.wait(1);
+				end
+			end);
+		end
+	end
+});
