@@ -4,3 +4,9 @@
 - Currently only supports the Hairdresser job, I plan on adding all of the jobs to this.
 
 Preview Video: https://www.youtube.com/watch?v=sBwk55_B2Gk
+
+Only tested on AWP
+
+[code]
+loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/refs/heads/main/main.lua"))();
+[/code]
