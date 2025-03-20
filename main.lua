@@ -61,7 +61,7 @@ end
 local player = utils:find_from("Players.LocalPlayer");
 local modules = utils:wait_for("PlayerScripts.Modules", player);
 local job_module_path = utils:wait_for("JobHandler", modules);
-local job_module = require(job_module);
+local job_module = require(job_module_path);
 local pathfinding_service = game:GetService("PathfindingService");
 
 -- pathfinding (pasted from roblox)
