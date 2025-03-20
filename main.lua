@@ -1,8 +1,4 @@
-if getgenv().work_con then
-    getgenv().work_con:Disconnect()    
-end
-
--- utils
+-- utils (these are pasted from wally)
 local utils = {} do
     function utils:find_from(path, start, wait_for_child)
         assert(typeof(path) == "string", "utils:find_from | expected \"path\" to be a string.")
@@ -67,7 +63,7 @@ local modules = utils:wait_for("PlayerScripts.Modules", player);
 local job_module = require(utils:wait_for("JobHandler", modules));
 local pathfinding_service = game:GetService("PathfindingService");
 
--- pathfinding
+-- pathfinding (copied from roblox <3)
 local pathfinding = {} do
     local path = pathfinding_service:CreatePath({
         AgentRadius = 3,
