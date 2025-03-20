@@ -62,6 +62,14 @@ local player = utils:find_from("Players.LocalPlayer");
 local modules = utils:wait_for("PlayerScripts.Modules", player);
 local job_module = require(utils:wait_for("JobHandler", modules));
 local pathfinding_service = game:GetService("PathfindingService");
+local virtual_user_service = game:GetService("VirtualUser")
+
+-- anti afk
+player.Idled:Connect(function()
+    virtual_user_service:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame);
+    task.wait(0.5);
+    virtual_user_service:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame);
+end)
 
 -- pathfinding (copied from roblox <3)
 local pathfinding = {} do
