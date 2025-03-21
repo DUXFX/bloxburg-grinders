@@ -310,7 +310,7 @@ function library:add_section(title)
 		end);
 	end
 	
-	function components:add_toggle(text, flag, callback, refused)
+	function components:add_toggle(text, flag, callback)
 		library.flags[flag] = false;
 		
 		local toggle = Instance.new("Frame")
@@ -412,28 +412,18 @@ function library:add_section(title)
 
 		toggle.Parent = section
 		
-		local function toggle_animation(state)
+		local function toggle_animation()
 			local toggle_tween = tween_service:Create(toggleBoxHide, TweenInfo.new(0.15, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {
-				Position = UDim2.new(state and 1.5 or 0.5, 0, .5, 0);
+				Position = UDim2.new(library.flags[flag] and 1.5 or 0.5, 0, .5, 0);
 			});
 
 			toggle_tween:Play();
 		end
 		
-		local state = false
 		toggleBox.Activated:Connect(function()
-			if callback then
-				local success, message = callback(not state);
-				if success == false and refused then
-					refused(message);
-					return;
-				end
-			end			
-			
-			state = not state;
-			library.flags[flag] = state;
-			
-			toggle_animation(state);
+			library.flags[flag] = not library.flags[flag];
+			toggle_animation();
+			callback(library.flags[flag]);
 		end)
 	end
 	
