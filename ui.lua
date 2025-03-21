@@ -1,5 +1,5 @@
--- shit ui library, its my first attempt, will be adding more features as I need them, this was made
--- specifically for a bloxburg autofarm, so all I needed was toggles, buttons and labels.
+-- shit ui library, I made it super duper fast and only made what I needed.
+-- it's specifically for a bloxburg autofarm, so all I needed was toggles, buttons and labels.
 
 
 local tween_service = game:GetService("TweenService");
