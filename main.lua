@@ -302,7 +302,7 @@ end
 
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))()
 
-library:create_window("Bloxburg Grinders", 400);
+library:create_window("Bloxburg Grinders", 250);
 
 local hair_tab = library:add_section("Hairdressers");
 
