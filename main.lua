@@ -300,36 +300,25 @@ local hairdressers = {
     end
 end
 
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/samerop/Aero/main/source.lua"))()
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))()
 
-library:CreateWindow({
-	Title = "Bloxburg Grinders"
-});
+library:create_window("Bloxburg Grinders", 400);
 
-local hair_tab = library:CreateTab({
-	Name = "Hairdressers"
-});
+local hair_tab = library:add_section("Hairdressers");
 
-local hair_farm_enabled = false;
-hair_farm_toggle = library:CreateToggle({
-	Text = "Farming: OFF",
-	Tab = hair_tab,
-	Callback = function(state)
-		hair_farm_toggle.Text = `Farming: {state and "ON" or "OFF"}`;
-		hair_farm_enabled = state;
-		if hair_farm_enabled then
-			if not job_module.IsWorking() then
-				hairdressers:start_shift();
-			end
+hair_tab:add_toggle("Autofarm", "hair_farm", function(state)
+    if state then
+        if not job_module.IsWorking() then
+            hairdressers:start_shift();
+        end
 
-			hairdressers:get_workstation();
+        hairdressers:get_workstation();
 
-			task.spawn(function()
-				while hair_farm_enabled do
-					hairdressers:complete_order();
-					task.wait(1);
-				end
-			end);
-		end
-	end
-});
+        task.spawn(function()
+            while library.flags.hair_farm do
+                hairdressers:complete_order();
+                task.wait(1);
+            end
+        end);
+    end
+end);
