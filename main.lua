@@ -300,7 +300,7 @@ local hairdressers = {
     end
 end
 
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))()
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
 
 library:create_window("Bloxburg Grinders", 250);
 
