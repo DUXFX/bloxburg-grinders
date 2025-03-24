@@ -1,5 +1,14 @@
+print("[Bloxburg Grinders] Loaded. Created by scriptbyte.")
+
+local debug_enabled = true;
+
 -- utils (these are pasted from wally)
 local utils = {} do
+    function utils:debug_log(...)
+        if debug_enabled then
+            warn("[Bloxburg Grinders]", ...);
+        end
+    end
     function utils:find_from(path, start, wait_for_child)
         assert(typeof(path) == "string", "utils:find_from | expected \"path\" to be a string.")
 
@@ -60,7 +69,10 @@ end
 -- variables
 local player = utils:find_from("Players.LocalPlayer");
 local modules = utils:wait_for("PlayerScripts.Modules", player);
+local data_service = utils:wait_for("ReplicatedStorage.Modules.DataService");
 local job_module = require(utils:wait_for("JobHandler", modules));
+local interaction_module = require(utils:wait_for("InteractionHandler", modules));
+local locations = utils:wait_for("Workspace.Environment.Locations");
 local pathfinding_service = game:GetService("PathfindingService");
 local virtual_user_service = game:GetService("VirtualUser")
 
@@ -129,6 +141,22 @@ local pathfinding = {} do
             repeat task.wait() until completed
             completed = false;
         end
+    end
+end
+
+-- interaction handler
+local interaction = {} do
+    function interaction:click_btn(text)
+        for _, v in next, utils:wait_for("PlayerGui._interactUI", player):GetChildren() do
+            if v:FindFirstChild("Button") and v.Button:FindFirstChild("TextLabel") and v.Button.TextLabel.Text == text then
+                getconnections(v.Button.Activated)[1]:Fire();
+            end
+        end
+    end
+
+    function interaction:quick_interact(model, text)
+        interaction_module:ShowMenu(model, model.PrimaryPart.Position, model.PrimaryPart);
+        self:click_btn(text);
     end
 end
 
@@ -276,17 +304,17 @@ local hairdressers = {
                                 continue;
                             end
                             getconnections(style_next_button.Activated)[1].Function();
-                            task.wait(0.1);
+                            task.wait(0.05);
                         end
-                        task.wait(0.1);
+                        task.wait(0.05);
                         for i=1, order_idx[2] do
                             if i==1 then
                                 continue;
                             end
                             getconnections(color_next_button.Activated)[1].Function();
-                            task.wait(0.1);
+                            task.wait(0.05);
                         end
-                        task.wait(0.1);
+                        task.wait(0.05);
                         getconnections(done_button.Activated)[1].Function();
                         repeat task.wait() until workstation.Occupied.Value ~= npc
                         repeat task.wait() until tostring(workstation.Occupied.Value) == "StylezHairStudioCustomer"
@@ -300,11 +328,125 @@ local hairdressers = {
     end
 end
 
+
+-- ice cream
+local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
+    local positions = {
+        topping_station = Vector3.new(929, 13, 1049),
+        front_counter = Vector3.new(942, 13, 1042)
+    };
+
+    local old_show_menu; old_show_menu = hookfunction(interaction_module.ShowMenu, newcclosure(function(...)
+        if not checkcaller() and ice_cream.farming == true then
+            return;
+        end
+        return old_show_menu(...);
+    end))
+
+    function ice_cream:get_workstation()
+        local workstations = utils:wait_for("BensIceCream.CustomerTargets", locations):GetChildren();
+        for _, workstation in next, workstations do
+            local customer = workstation.Occupied.Value;
+            if customer and customer.Order.Value == "" then
+                return workstation, customer;
+            end
+        end
+    end
+
+    function ice_cream:toggle_farming(state)
+        if typeof(state) == "boolean" then
+            self.farming = state;
+        else
+            self.farming = not self.farming;
+        end
+
+        if not self.farming then
+            self.orders_completed = 0;
+            return
+        end
+
+        if job_module:GetJob() ~= "BensIceCreamSeller" then
+            job_module:GoToWork("BensIceCreamSeller");
+            task.wait(1);
+            player.Character.Humanoid:MoveTo(positions.front_counter);
+            repeat task.wait() until 5 >= utils:dist_between(player.Character.HumanoidRootPart.Position, positions.front_counter);
+        end
+        
+        -- integrity check to ensure farm remains active.
+        coroutine.wrap(function()
+            local current_order;
+            while self.farming do
+                current_order = self.orders_completed;
+                task.wait(10);
+                if current_order == self.orders_completed and self.farming then
+                    self:toggle_farming(false);
+                    self:toggle_farming(true);
+                    self.orders_completed = current_order;
+                end
+            end
+        end)();
+        
+        coroutine.wrap(function()
+            while self.farming do
+                local workstation, customer = self:get_workstation();
+                if workstation and customer then
+                    local table_objs = utils:wait_for("BensIceCream.TableObjects", locations);
+                    
+                    local flavor1 = utils:wait_for("Order.Flavor1", customer).Value;
+                    local flavor2 = utils:wait_for("Order.Flavor2", customer).Value;
+                    local topping = utils:wait_for("Order.Topping", customer).Value;
+                    
+                    utils:debug_log(`Order {self.orders_completed + 1} - Making a {flavor1} + {flavor2}{topping ~= "" and " with " .. topping or ""}.`);
+
+                    player.Character.Humanoid:MoveTo(positions.topping_station);
+                    repeat task.wait() until 5 >= utils:dist_between(player.Character.HumanoidRootPart.Position, positions.topping_station);
+
+                    repeat
+                        interaction:quick_interact(table_objs.IceCreamCups, "Take");
+                        task.wait(0.5)
+                    until player.Character:FindFirstChild("Ice Cream Cup") or self.farming == false;
+
+                    if self.farming == false then
+                        return;
+                    end
+
+                    task.wait(.5);
+
+                    interaction:quick_interact(table_objs:FindFirstChild(flavor1), "Add");
+                    interaction:quick_interact(table_objs:FindFirstChild(flavor2), "Add");
+
+                    if topping ~= "" then
+                        interaction:quick_interact(table_objs:FindFirstChild(topping), "Add");
+                    end
+                    
+                    player.Character.Humanoid:MoveTo(positions.front_counter);
+                    repeat task.wait() until 3 >= utils:dist_between(player.Character.HumanoidRootPart.Position, positions.front_counter);
+                    
+                    task.wait(0.5);
+
+                    interaction:quick_interact(customer, "Give");
+
+                    self.orders_completed += 1;
+
+                    repeat task.wait() until workstation.Occupied.Value == nil;
+                    utils:debug_log(`Order {self.orders_completed} completed.`);
+                    
+                    task.wait(0.5);
+                else
+                    player.Character.Humanoid:MoveTo(positions.front_counter);
+                    repeat task.wait() until 5 >= utils:dist_between(player.Character.HumanoidRootPart.Position, positions.front_counter);
+                end
+            end
+        end)();
+    end
+end
+
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
 
 library:create_window("Bloxburg Grinders", 250);
 
 local hair_tab = library:add_section("Hairdressers");
+local ice_cream_tab = library:add_section("Ben's Ice Cream");
 
 hair_tab:add_toggle("Autofarm", "hair_farm", function(state)
     if state then
@@ -321,4 +463,8 @@ hair_tab:add_toggle("Autofarm", "hair_farm", function(state)
             end
         end);
     end
+end);
+
+ice_cream_tab:add_toggle("Autofarm", "ice_farm", function(state)
+    ice_cream:toggle_farming(state);
 end);
