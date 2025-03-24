@@ -2,7 +2,7 @@ print("[Bloxburg Grinders] Loaded. Created by scriptbyte.")
 
 local debug_enabled = true;
 
--- utils (these are pasted from wally)
+-- utils
 local utils = {} do
     function utils:debug_log(...)
         if debug_enabled then
