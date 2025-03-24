@@ -8,6 +8,7 @@ local utils = {} do
             warn("[Bloxburg Grinders]", ...);
         end
     end
+    
     function utils:find_from(path, start, wait_for_child)
         assert(typeof(path) == "string", "utils:find_from | expected \"path\" to be a string.")
 
