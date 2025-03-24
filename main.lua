@@ -1,8 +1,7 @@
-print("[Bloxburg Grinders] Loaded. Created by scriptbyte.")
+local debug_enabled = false;
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
 
-local debug_enabled = true;
-
--- utils
+-- utils (these are pasted from wally)
 local utils = {} do
     function utils:debug_log(...)
         if debug_enabled then
@@ -54,16 +53,6 @@ local utils = {} do
     function utils:wait_for(path, start)
         return self:find_from(path, start, true);
     end
-
-    function utils:dist_between(p1, p2)
-        return (p1 - p2).Magnitude;
-    end
-
-    function utils:get_position()
-        local player = utils:find_from("Players.LocalPlayer");
-        local character = player.Character or player.CharacterAdded:Wait();
-        return character.PrimaryPart.Position;
-    end
 end
 
 -- variables
@@ -88,14 +77,14 @@ local pathfinding = {} do
     local path = pathfinding_service:CreatePath({
         AgentRadius = 3,
         AgentHeight = 6,
-        AgentCanClimb = true,
+        AgentCanClimb = false,
         AgentCanJump = true
     });
 
     local waypoints, next_waypoint_idx, reached_connection, blocked_connection;
     local completed = false;
 
-    function pathfinding:walk_to(target, yield)
+    function pathfinding:walk_to(target, no_jump)
         local _type = typeof(target);
         if not table.find({"BasePart", "CFrame", "Vector3"}, _type) then
             return error(`pathfinding:walk_to | "target" expected to be of type ("BasePart", "CFrame", "Vector3") got "{_type}".`, 0);
@@ -103,48 +92,57 @@ local pathfinding = {} do
 
         local character = player.Character or player.CharacterAdded:Wait();
         local humanoid = character:WaitForChild("Humanoid");
-
         local success, err_message = pcall(function()
             path:ComputeAsync(character.PrimaryPart.Position, _type == "Vector3" and target or target.Position);
         end)
 
         if success and path.Status == Enum.PathStatus.Success then
             waypoints = path:GetWaypoints();
-
+            
+            local is_blocked = false;
+            
             blocked_connection = path.Blocked:Connect(function(blocked_waypoint_idx)
                 if blocked_waypoint_idx >= next_waypoint_idx then
                     blocked_connection:Disconnect();
-                    self:walk_to(target, yield or false);
+                    is_blocked = true;
+                    self:walk_to(target);
                 end
             end);
+                
+            coroutine.wrap(function()
+                while blocked_connection ~= nil and no_jump ~= true do
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping);
+                    task.wait(.75);
+                end
+            end)();
 
-            if not reached_connection then
-                reached_connection = humanoid.MoveToFinished:Connect(function(reached)
-                    if reached and next_waypoint_idx < #waypoints then
-                        next_waypoint_idx += 1;
-                        humanoid:MoveTo(waypoints[next_waypoint_idx].Position);
-                    else
-                        completed = true;
-                        reached_connection:Disconnect();
-                        blocked_connection:Disconnect();
-                    end
-                end)
+            for i, v in next, waypoints do
+                if is_blocked then
+                    break;
+                end
+                
+                humanoid:MoveTo(v.Position);
+                humanoid.MoveToFinished:Wait();
             end
-            
-            next_waypoint_idx = 2;
-            humanoid:MoveTo(waypoints[next_waypoint_idx].Position);
-        else
-            return error(`pathfinding:walk_to | Failed to compute path from {tostring(character.PrimaryPart.Position)} to {tostring(character.PrimaryPart.Position, _type == "Vector3" and target or target.Position)}`, 0);
-        end
 
-        if yield then
-            repeat task.wait() until completed
-            completed = false;
+            blocked_connection = nil;
+
+        else
+            utils:debug_log("err")
+            return error(`pathfinding:walk_to | Failed to compute path from {tostring(character.PrimaryPart.Position)} to {tostring(character.PrimaryPart.Position, _type == "Vector3" and target or target.Position)}`, 0);
         end
     end
 end
 
 -- interaction handler
+local disable_interaction = false;
+local old_show_menu; old_show_menu = hookfunction(interaction_module.ShowMenu, newcclosure(function(...)
+    if not checkcaller() and disable_interaction == true then
+        return;
+    end
+    return old_show_menu(...);
+end))
+
 local interaction = {} do
     function interaction:click_btn(text)
         for _, v in next, utils:wait_for("PlayerGui._interactUI", player):GetChildren() do
@@ -154,8 +152,9 @@ local interaction = {} do
         end
     end
 
-    function interaction:quick_interact(model, text)
-        interaction_module:ShowMenu(model, model.PrimaryPart.Position, model.PrimaryPart);
+    function interaction:quick_interact(model, text, specified_part)
+        local part = specified_part or model.PrimaryPart or model:FindFirstChildOfClass("MeshPart") or model:FindFirstChildOfClass("BasePart");
+        interaction_module:ShowMenu(model, part.Position, part);
         self:click_btn(text);
     end
 end
@@ -191,7 +190,7 @@ local hairdressers = {
     end
 
     function hairdressers:get_workstations()
-        local workstation_folder = utils:wait_for("Workspace.Environment.Locations.StylezHairStudio.HairdresserWorkstations");
+        local workstation_folder = utils:wait_for("StylezHairStudio.HairdresserWorkstations", locations);
         
         if not workstation_folder then
             return error("hairdressers:get_workstations | Failed to find workstation_folder.", 0);
@@ -209,13 +208,12 @@ local hairdressers = {
     end
 
     function hairdressers:get_nearest_workstation()
-        local current_position = utils:get_position();
         local workstations = self:get_workstations();
         local closest_workstation, distance = nil, math.huge;
 
         if workstations then
             for _, v in next, workstations do
-                local workstation_distance = utils:dist_between(current_position, v.Mirror.Position);
+                local workstation_distance = player:DistanceFromCharacter(v.Mirror.Position);
                 if distance > workstation_distance then
                     distance = workstation_distance;
                     closest_workstation = v
@@ -226,7 +224,7 @@ local hairdressers = {
     end
 
     function hairdressers:claim_workstation(workstation)
-        pathfinding:walk_to(workstation.Mat.Position, true);
+        pathfinding:walk_to(workstation.Mat.Position);
         
         local next_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Style.Next", workstation);
         local back_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Style.Back", workstation);
@@ -304,17 +302,17 @@ local hairdressers = {
                                 continue;
                             end
                             getconnections(style_next_button.Activated)[1].Function();
-                            task.wait(0.05);
+                            task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0);
                         end
-                        task.wait(0.05);
+                        task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0);
                         for i=1, order_idx[2] do
                             if i==1 then
                                 continue;
                             end
                             getconnections(color_next_button.Activated)[1].Function();
-                            task.wait(0.05);
+                            task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0);
                         end
-                        task.wait(0.05);
+                        task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0);
                         getconnections(done_button.Activated)[1].Function();
                         repeat task.wait() until workstation.Occupied.Value ~= npc
                         repeat task.wait() until tostring(workstation.Occupied.Value) == "StylezHairStudioCustomer"
@@ -326,22 +324,34 @@ local hairdressers = {
             end
         end
     end
+
+    function hairdressers:toggle_farming(state)
+        if state then
+            if not job_module.IsWorking() then
+                hairdressers:start_shift();
+            end
+    
+            hairdressers:get_workstation();
+    
+            task.spawn(function()
+                while library.flags.hair_farm do
+                    hairdressers:complete_order();
+                    task.wait(1);
+                end
+            end);
+        end
+    end
 end
 
 
 -- ice cream
 local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
     local positions = {
-        topping_station = Vector3.new(929, 13, 1049),
+        cup_station = Vector3.new(929, 13, 1049),
+        flavour_station = Vector3.new(933, 13, 1051),
+        topping_station = Vector3.new(926, 13, 1046),
         front_counter = Vector3.new(942, 13, 1042)
     };
-
-    local old_show_menu; old_show_menu = hookfunction(interaction_module.ShowMenu, newcclosure(function(...)
-        if not checkcaller() and ice_cream.farming == true then
-            return;
-        end
-        return old_show_menu(...);
-    end))
 
     function ice_cream:get_workstation()
         local workstations = utils:wait_for("BensIceCream.CustomerTargets", locations):GetChildren();
@@ -361,18 +371,20 @@ local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
         end
 
         if not self.farming then
+            disable_interaction = false;
             self.orders_completed = 0;
             return
         end
+
+        disable_interaction = true;
 
         if job_module:GetJob() ~= "BensIceCreamSeller" then
             job_module:GoToWork("BensIceCreamSeller");
             task.wait(1);
             player.Character.Humanoid:MoveTo(positions.front_counter);
-            repeat task.wait() until 5 >= utils:dist_between(player.Character.HumanoidRootPart.Position, positions.front_counter);
+            repeat task.wait() until 5 >= player:DistanceFromCharacter(positions.front_counter);
         end
         
-        -- integrity check to ensure farm remains active.
         coroutine.wrap(function()
             local current_order;
             while self.farming do
@@ -398,8 +410,7 @@ local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
                     
                     utils:debug_log(`Order {self.orders_completed + 1} - Making a {flavor1} + {flavor2}{topping ~= "" and " with " .. topping or ""}.`);
 
-                    player.Character.Humanoid:MoveTo(positions.topping_station);
-                    repeat task.wait() until 5 >= utils:dist_between(player.Character.HumanoidRootPart.Position, positions.topping_station);
+                    pathfinding:walk_to(positions.cup_station, true);
 
                     repeat
                         interaction:quick_interact(table_objs.IceCreamCups, "Take");
@@ -412,59 +423,257 @@ local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
 
                     task.wait(.5);
 
+                    if library.flags.ice_farm_legit then
+                        player.Character.Humanoid:MoveTo(positions.flavour_station);
+                        player.Character.Humanoid.MoveToFinished:Wait();
+                    end
                     interaction:quick_interact(table_objs:FindFirstChild(flavor1), "Add");
+                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0)
                     interaction:quick_interact(table_objs:FindFirstChild(flavor2), "Add");
+                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0)
+
 
                     if topping ~= "" then
+                        if library.flags.ice_farm_legit then
+                            player.Character.Humanoid:MoveTo(positions.topping_station);
+                            player.Character.Humanoid.MoveToFinished:Wait();
+                        end
                         interaction:quick_interact(table_objs:FindFirstChild(topping), "Add");
+                        task.wait(library.flags.ice_farm_legit and math.random(3, 5)/10 or 0)
                     end
                     
                     player.Character.Humanoid:MoveTo(positions.front_counter);
-                    repeat task.wait() until 3 >= utils:dist_between(player.Character.HumanoidRootPart.Position, positions.front_counter);
-                    
-                    task.wait(0.5);
+                    player.Character.Humanoid.MoveToFinished:Wait();
+                    task.wait(0.25);
 
                     interaction:quick_interact(customer, "Give");
 
                     self.orders_completed += 1;
 
-                    repeat task.wait() until workstation.Occupied.Value == nil;
+                    repeat task.wait() until workstation.Occupied.Value ~= customer;
                     utils:debug_log(`Order {self.orders_completed} completed.`);
                     
                     task.wait(0.5);
                 else
                     player.Character.Humanoid:MoveTo(positions.front_counter);
-                    repeat task.wait() until 5 >= utils:dist_between(player.Character.HumanoidRootPart.Position, positions.front_counter);
+                    player.Character.Humanoid.MoveToFinished:Wait();
                 end
             end
         end)();
     end
 end
 
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
+-- supermarket cashier
+local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
+    function supermarket_cashier:get_workstations()
+        local workstation_folder = utils:wait_for("Supermarket.CashierWorkstations", locations);
+        
+        if not workstation_folder then
+            return error("supermarket_cashier:get_workstations | Failed to find workstation_folder.", 0);
+        end
+
+        local workstations = {};
+        
+        for _, workstation in next, workstation_folder:GetChildren() do
+            if workstation.Name == "Workstation" and table.find({player.Name, "nil"}, tostring(workstation.InUse.Value)) then
+                workstations[#workstations + 1] = workstation;
+            end
+        end
+
+        return workstations;
+    end
+    
+    function supermarket_cashier:get_nearest_workstation()
+        local workstations = self:get_workstations();
+        local closest_workstation, distance = nil, math.huge;
+
+        if workstations then
+            for _, v in next, workstations do
+                local workstation_distance = player:DistanceFromCharacter(v.Scanner.Position);
+                if distance > workstation_distance then
+                    distance = workstation_distance;
+                    closest_workstation = v
+                end
+            end
+            return closest_workstation;
+        end
+    end
+
+    function supermarket_cashier:claim_workstation()
+        local workstation = self:get_nearest_workstation();
+        pathfinding:walk_to(workstation.Scanner.Position - Vector3.new(4, 0, 0), true);
+        interaction:quick_interact(workstation.BagHolder, "Take");
+        return workstation;
+    end
+
+    function supermarket_cashier:get_workstation()
+        local workstations = self:get_workstations();
+        for _, v in next, workstations do
+            if v.InUse.Value == player then
+                return v;
+            end
+        end
+    end
+
+    function supermarket_cashier:needs_restocking()
+        local workstation = self:get_workstation();
+        if not workstation then
+            workstation = supermarket_cashier:claim_workstation();
+        end
+
+        return workstation.BagsLeft.Value == 0;
+    end
+
+    function supermarket_cashier:restock()
+        local workstation = self:get_workstation();
+        if not self:needs_restocking() then
+            return;
+        end
+        
+        if not utils:find("BFF Bags", player.Character) then
+            local crate = utils:wait_for("Supermarket.Crates.BagCrate", locations);
+            
+            pathfinding:walk_to(crate.Position + Vector3.new(5, 0, -5));
+
+            repeat
+                interaction:quick_interact(crate, "Take", crate);
+                task.wait(0.25);
+            until utils:find("BFF Bags", player.Character);
+        end
+
+        pathfinding:walk_to(workstation.Scanner.Position - Vector3.new(4, 0, 0));
+        
+        interaction:quick_interact(workstation.BagHolder, "Restock", workstation.BagHolder.PrimaryPart);
+
+        repeat
+            task.wait();
+        until self:needs_restocking() == false;
+    end
+
+    function supermarket_cashier:get_current_bag_count(workstation)
+        local bag_count = 8;
+        for _, v in next, workstation.Bags:GetChildren() do
+            bag_count -= v.Transparency
+        end
+        return bag_count;
+    end
+
+    function supermarket_cashier:on_dropped_food(workstation, food)
+        if not self.farming then
+            return;
+        end
+        local food_dropped = utils:wait_for("Status.PlacedObjects", workstation.Occupied.Value).Value;
+        if food_dropped / 3 > self:get_current_bag_count(workstation) then
+            self:restock();
+            interaction:quick_interact(workstation.BagHolder, "Take");
+            task.wait(0.05);
+        end
+        interaction:quick_interact(food, "Scan", food);
+        task.wait(0.05);
+    end
+
+    function supermarket_cashier:complete_order()
+        if job_module:GetJob() ~= "SupermarketCashier" or not self.farming then
+            return;
+        end
+
+        self.food_dropped = 0;
+
+        local workstation = self:get_workstation();
+        
+        if not workstation then
+            workstation = self:claim_workstation();
+        end
+        
+        self:restock();
+
+        if not self.farming then
+            return;
+        end
+
+        repeat task.wait() until workstation.Occupied.Value ~= nil;
+
+        local customer = workstation.Occupied.Value;
+        
+        if customer ~= nil then
+            repeat
+                for _, v in next, workstation.DroppedFood:GetChildren() do
+                    self:on_dropped_food(workstation, v);
+                    task.wait(0.5);
+                end
+                task.wait();
+            until utils:wait_for("Status.PlacedObjects", customer).Value == utils:wait_for("Status.ScannedObjects", customer).Value and 3 >= (customer.Head.Position - workstation.CustomerTarget_2.Position).Magnitude
+            
+            local done_button = utils:wait_for("Display.Screen.CashierGUI.Frame.Done", workstation);
+            getconnections(done_button.Activated)[1]:Fire();
+
+            repeat task.wait() until workstation.Occupied.Value ~= customer;
+
+            self.orders_completed += 1;
+        end
+    end
+
+    function supermarket_cashier:toggle_farming(state)
+        if typeof(state) == "boolean" then
+            self.farming = state;
+        else
+            self.farming = not self.farming;
+        end
+
+        if not self.farming then
+            disable_interaction = false;
+            self.orders_completed = 0;
+            return
+        end
+
+        disable_interaction = true;
+
+        if job_module:GetJob() ~= "SupermarketCashier" then
+            job_module:GoToWork("SupermarketCashier");
+            self:claim_workstation();
+        end
+        
+        coroutine.wrap(function()
+            local current_order;
+            while self.farming do
+                current_order = self.orders_completed;
+                task.wait(30);
+                if current_order == self.orders_completed and self.farming then
+                    self:toggle_farming(false);
+                    self:toggle_farming(true);
+                    self.orders_completed = current_order;
+                end
+            end
+        end)();
+        
+        coroutine.wrap(function()
+            while self.farming do
+                self:complete_order();
+            end
+        end)();
+    end
+end
 
 library:create_window("Bloxburg Grinders", 250);
 
 local hair_tab = library:add_section("Hairdressers");
 local ice_cream_tab = library:add_section("Ben's Ice Cream");
+local supermarket_cashier_tab = library:add_section("Supermarket Cashier");
 
 hair_tab:add_toggle("Autofarm", "hair_farm", function(state)
-    if state then
-        if not job_module.IsWorking() then
-            hairdressers:start_shift();
-        end
-
-        hairdressers:get_workstation();
-
-        task.spawn(function()
-            while library.flags.hair_farm do
-                hairdressers:complete_order();
-                task.wait(1);
-            end
-        end);
-    end
+    hairdressers:toggle_farming(state);
 end);
+
+hair_tab:add_toggle("Legit Mode", "hair_farm_legit", function() end);
 
 ice_cream_tab:add_toggle("Autofarm", "ice_farm", function(state)
     ice_cream:toggle_farming(state);
 end);
+
+ice_cream_tab:add_toggle("Legit Mode", "ice_farm_legit", function() end);
+
+supermarket_cashier_tab:add_toggle("Autofarm", "market_cashier_farm", function(state)
+    supermarket_cashier:toggle_farming(state);
+end);
+
+supermarket_cashier_tab:add_toggle("Legit Mode", " market_cashier_farm_legit", function() end);

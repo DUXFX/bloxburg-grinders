@@ -1,8 +1,12 @@
-# Bloxburg Grinders v1.0.1
+# Bloxburg Grinders v1.0.2
 - Scripted solely by [**scriptbyte/iopsec**](https://v3rm.net/members/scriptbyte.10844/)
-- Currently supports the hairdresser & ice cream seller job, I plan on adding all of the jobs to this.
 
-Preview Video: https://www.youtube.com/watch?v=sBwk55_B2Gk
+Features:
+- Hairdressers autofarm (w/legit mode).
+- Ice cream seller autofarm (w/legit mode).
+- Supermarket cashier autofarm (w/legit mode).
+
+Preview Video (v1.0.0 - only hair farm): https://www.youtube.com/watch?v=sBwk55_B2Gk
 
 Only tested on AWP
 
