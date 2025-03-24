@@ -1,4 +1,4 @@
-# Bloxburg Grinders v1.0.2
+# Bloxburg Grinders v1.0.3
 - Scripted solely by [**scriptbyte/iopsec**](https://v3rm.net/members/scriptbyte.10844/)
 
 Features:
@@ -6,7 +6,9 @@ Features:
 - Ice cream seller autofarm (w/legit mode).
 - Supermarket cashier autofarm (w/legit mode).
 
-Preview Video (v1.0.0 - only hair farm): https://www.youtube.com/watch?v=sBwk55_B2Gk
+Preview Video (v1.0.3): https://www.youtube.com/watch?v=o9Fu3Jw15Bs
+
+Our discord server: https://discord.gg/9QZbbgvyMk
 
 Only tested on AWP
 
