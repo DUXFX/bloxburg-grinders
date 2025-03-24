@@ -425,9 +425,9 @@ local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
                     end
 
                     interaction:quick_interact(table_objs:FindFirstChild(flavor1), "Add");
-                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0.05)
+                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0.05);
                     interaction:quick_interact(table_objs:FindFirstChild(flavor2), "Add");
-                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0.05)
+                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0.05);
 
 
                     if topping ~= "" then
