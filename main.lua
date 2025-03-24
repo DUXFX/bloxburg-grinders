@@ -75,7 +75,7 @@ end)
 -- pathfinding (copied from roblox <3)
 local pathfinding = {} do
     local path = pathfinding_service:CreatePath({
-        AgentRadius = 3,
+        AgentRadius = 6,
         AgentHeight = 6,
         AgentCanClimb = false,
         AgentCanJump = true
@@ -101,20 +101,11 @@ local pathfinding = {} do
             
             local is_blocked = false;
             
-            blocked_connection = path.Blocked:Connect(function(blocked_waypoint_idx)
-                if blocked_waypoint_idx >= next_waypoint_idx then
-                    blocked_connection:Disconnect();
-                    is_blocked = true;
-                    self:walk_to(target);
-                end
+            local blocked_connection; blocked_connection = path.Blocked:Connect(function(blocked_waypoint_idx)
+                pcall(blocked_connection.Disconnect, blocked_connection);
+                is_blocked = true;
+                self:walk_to(target);
             end);
-                
-            coroutine.wrap(function()
-                while blocked_connection ~= nil and no_jump ~= true do
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping);
-                    task.wait(.75);
-                end
-            end)();
 
             for i, v in next, waypoints do
                 if is_blocked then
@@ -122,6 +113,11 @@ local pathfinding = {} do
                 end
                 
                 humanoid:MoveTo(v.Position);
+
+                if v.Action == Enum.PathWaypointAction.Jump and not no_jump then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+
                 humanoid.MoveToFinished:Wait();
             end
 
@@ -534,7 +530,7 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
             local crate = utils:wait_for("Supermarket.Crates.BagCrate", locations);
             
             pathfinding:walk_to(crate.Position + Vector3.new(5, 0, -5));
-
+            task.wait(0.5);
             repeat
                 interaction:quick_interact(crate, "Take", crate);
                 task.wait(0.25);
@@ -542,11 +538,10 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
         end
 
         pathfinding:walk_to(workstation.Scanner.Position - Vector3.new(4, 0, 0));
-        
-        interaction:quick_interact(workstation.BagHolder, "Restock", workstation.BagHolder.PrimaryPart);
 
         repeat
-            task.wait();
+            interaction:quick_interact(workstation.BagHolder, "Restock", workstation.BagHolder.PrimaryPart);
+            task.wait(0.25);
         until self:needs_restocking() == false;
     end
 
@@ -599,9 +594,9 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
             repeat
                 for _, v in next, workstation.DroppedFood:GetChildren() do
                     self:on_dropped_food(workstation, v);
-                    task.wait(0.5);
+                    task.wait(library.flags.market_cashier_farm_legit and math.random(4, 10)/10 or 0.05);
                 end
-                task.wait();
+                task.wait(library.flags.market_cashier_farm_legit and math.random(4, 10)/10 or 0.05);
             until utils:wait_for("Status.PlacedObjects", customer).Value == utils:wait_for("Status.ScannedObjects", customer).Value and 3 >= (customer.Head.Position - workstation.CustomerTarget_2.Position).Magnitude
             
             local done_button = utils:wait_for("Display.Screen.CashierGUI.Frame.Done", workstation);
@@ -676,4 +671,4 @@ supermarket_cashier_tab:add_toggle("Autofarm", "market_cashier_farm", function(s
     supermarket_cashier:toggle_farming(state);
 end);
 
-supermarket_cashier_tab:add_toggle("Legit Mode", " market_cashier_farm_legit", function() end);
+supermarket_cashier_tab:add_toggle("Legit Mode", "market_cashier_farm_legit", function() end);
