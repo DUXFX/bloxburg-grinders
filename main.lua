@@ -1,7 +1,7 @@
 local debug_enabled = false;
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
 
--- utils (these are pasted from wally)
+-- utils
 local utils = {} do
     function utils:debug_log(...)
         if debug_enabled then
