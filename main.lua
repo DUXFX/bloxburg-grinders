@@ -290,17 +290,17 @@ local hairdressers = {
                                 continue;
                             end
                             getconnections(style_next_button.Activated)[1].Function();
-                            task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0);
+                            task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         end
-                        task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0);
+                        task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         for i=1, order_idx[2] do
                             if i==1 then
                                 continue;
                             end
                             getconnections(color_next_button.Activated)[1].Function();
-                            task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0);
+                            task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         end
-                        task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0);
+                        task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         getconnections(done_button.Activated)[1].Function();
                         repeat task.wait() until workstation.Occupied.Value ~= npc
                         repeat task.wait() until tostring(workstation.Occupied.Value) == "StylezHairStudioCustomer"
