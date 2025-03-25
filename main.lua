@@ -110,7 +110,10 @@ local pathfinding = {} do
                 humanoid:MoveTo(v.Position);
 
                 if v.Action == Enum.PathWaypointAction.Jump and not no_jump then
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    task.spawn(function()
+                        task.wait(0.15);
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping);
+                    end);
                 end
 
                 humanoid.MoveToFinished:Wait();
