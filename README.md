@@ -8,8 +8,6 @@ Features:
 
 Preview Video (v1.0.3): https://www.youtube.com/watch?v=o9Fu3Jw15Bs
 
-Our discord server: https://discord.gg/9QZbbgvyMk
-
 Only tested on AWP
 
 ```lua
