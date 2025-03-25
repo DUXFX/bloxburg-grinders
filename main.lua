@@ -97,7 +97,9 @@ local pathfinding = {} do
             local is_blocked = false;
             
             local blocked_connection; blocked_connection = path.Blocked:Connect(function(blocked_waypoint_idx)
-                pcall(blocked_connection.Disconnect, blocked_connection);
+                if blocked_connection then
+                    pcall(blocked_connection.Disconnect, blocked_connection);
+                end
                 is_blocked = true;
                 self:walk_to(target);
             end);
