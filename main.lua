@@ -5,6 +5,21 @@ end
 
 getgenv().BLOXBURG_GRINDERS_LOADED = true;
 
+local required_functions = {"firesignal", "loadstring", "require", "getupvalue", "hookfunction", "checkcaller", "newcclosure"};
+
+local failed_count = 0;
+for _, v in next, required_functions do
+    if rawget(getgenv(), v) == nil then
+        failed_count += 1;
+        warn(`[{failed_count}] Missing {v}`);
+    end
+end
+
+if failed_count > 0 then
+    warn(`Bloxburg Grinders doesn't support your executor, you're missing {failed_count} functions we require!`);
+    return;
+end
+
 local debug_enabled = false;
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
 
@@ -135,7 +150,7 @@ local interaction = {} do
     function interaction:click_btn(text)
         for _, v in next, utils:wait_for("PlayerGui._interactUI", player):GetChildren() do
             if v:FindFirstChild("Button") and v.Button:FindFirstChild("TextLabel") and v.Button.TextLabel.Text == text then
-                getconnections(v.Button.Activated)[1]:Fire();
+                firesignal(v.Button.Activated);
             end
         end
     end
@@ -216,10 +231,11 @@ local hairdressers = {
         
         local next_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Style.Next", workstation);
         local back_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Style.Back", workstation);
+
         repeat
-            getconnections(next_button.Activated)[1].Function();
+            firesignal(next_button.Activated);
             task.wait();
-            getconnections(back_button.Activated)[1].Function();
+            firesignal(back_button.Activated);
             task.wait(0.1);
         until workstation.InUse.Value ~= nil
 
@@ -289,7 +305,7 @@ local hairdressers = {
                             if i==1 then
                                 continue;
                             end
-                            getconnections(style_next_button.Activated)[1].Function();
+                            firesignal(style_next_button.Activated);
                             task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         end
                         task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
@@ -297,11 +313,11 @@ local hairdressers = {
                             if i==1 then
                                 continue;
                             end
-                            getconnections(color_next_button.Activated)[1].Function();
+                            firesignal(color_next_button.Activated);
                             task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         end
                         task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
-                        getconnections(done_button.Activated)[1].Function();
+                        firesignal(done_button.Activated);
                         repeat task.wait() until workstation.Occupied.Value ~= npc
                         repeat task.wait() until tostring(workstation.Occupied.Value) == "StylezHairStudioCustomer"
                         task.wait(1);
@@ -317,6 +333,7 @@ local hairdressers = {
         if state then
             if not job_module.IsWorking() then
                 hairdressers:start_shift();
+                task.wait(1);
             end
     
             hairdressers:get_workstation();
@@ -333,7 +350,7 @@ end
 
 
 -- ice cream
-local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
+local ice_cream = { farming = false, integrity = 0, connections = {}, orders_completed = 0 } do
     local positions = {
         cup_station = Vector3.new(929, 13, 1049),
         flavour_station = Vector3.new(933, 13, 1051),
@@ -359,6 +376,7 @@ local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
         end
 
         if not self.farming then
+            self.integrity += 1
             disable_interaction = false;
             self.orders_completed = 0;
             return
@@ -373,12 +391,13 @@ local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
             repeat task.wait() until 5 >= player:DistanceFromCharacter(positions.front_counter);
         end
         
+        local current_integrity = self.integrity;
         coroutine.wrap(function()
             local current_order;
-            while self.farming do
+            while self.integrity == current_integrity do
                 current_order = self.orders_completed;
                 task.wait(10);
-                if current_order == self.orders_completed and self.farming then
+                if current_order == self.orders_completed and self.farming and self.integrity == current_integrity then
                     self:toggle_farming(false);
                     self:toggle_farming(true);
                     self.orders_completed = current_order;
@@ -590,13 +609,13 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
             repeat
                 for _, v in next, workstation.DroppedFood:GetChildren() do
                     self:on_dropped_food(workstation, v);
-                    task.wait(library.flags.market_cashier_farm_legit and math.random(4, 10)/10 or 0.05);
+                    task.wait(library.flags.market_cashier_farm_legit and math.random(2, 5)/10 or 0.05);
                 end
-                task.wait(library.flags.market_cashier_farm_legit and math.random(4, 10)/10 or 0.05);
+                task.wait(library.flags.market_cashier_farm_legit and math.random(2, 5)/10 or 0.05);
             until utils:wait_for("Status.PlacedObjects", customer).Value == utils:wait_for("Status.ScannedObjects", customer).Value and 3 >= (customer.Head.Position - workstation.CustomerTarget_2.Position).Magnitude
             
             local done_button = utils:wait_for("Display.Screen.CashierGUI.Frame.Done", workstation);
-            getconnections(done_button.Activated)[1]:Fire();
+            firesignal(done_button.Activated);
 
             repeat task.wait() until workstation.Occupied.Value ~= customer;
 
