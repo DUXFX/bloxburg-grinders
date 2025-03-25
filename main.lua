@@ -1,3 +1,10 @@
+if BLOXBURG_GRINDERS_LOADED then
+    warn("Only 1 instance of bloxburg grinders can be executed at once, to prevent issues.");
+    return;
+end
+
+getgenv().BLOXBURG_GRINDERS_LOADED = true;
+
 local debug_enabled = false;
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
 
@@ -75,11 +82,11 @@ end)
 
 -- pathfinding (copied from roblox <3)
 local pathfinding = {} do
-    local path = pathfinding_service:CreatePath();
-    local waypoints, next_waypoint_idx, reached_connection, blocked_connection;
-    local completed = false;
-
     function pathfinding:walk_to(target, no_jump)
+        print("Finding path to", target)
+        local path = pathfinding_service:CreatePath();
+        local waypoints, next_waypoint_idx, reached_connection, blocked_connection;
+        local completed = false;
         local _type = typeof(target);
         if not table.find({"BasePart", "CFrame", "Vector3"}, _type) then
             return error(`pathfinding:walk_to | "target" expected to be of type ("BasePart", "CFrame", "Vector3") got "{_type}".`, 0);
@@ -93,22 +100,7 @@ local pathfinding = {} do
 
         if success and path.Status == Enum.PathStatus.Success then
             waypoints = path:GetWaypoints();
-            
-            local is_blocked = false;
-            
-            local blocked_connection; blocked_connection = path.Blocked:Connect(function(blocked_waypoint_idx)
-                if blocked_connection then
-                    pcall(blocked_connection.Disconnect, blocked_connection);
-                end
-                is_blocked = true;
-                self:walk_to(target);
-            end);
-
-            for i, v in next, waypoints do
-                if is_blocked then
-                    break;
-                end
-                
+            for i, v in next, waypoints do                
                 humanoid:MoveTo(v.Position);
 
                 if v.Action == Enum.PathWaypointAction.Jump and not no_jump then
@@ -220,7 +212,7 @@ local hairdressers = {
     end
 
     function hairdressers:claim_workstation(workstation)
-        pathfinding:walk_to(workstation.Mat.Position);
+        player.Character.Humanoid:MoveTo(workstation.Mat.Position);
         
         local next_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Style.Next", workstation);
         local back_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Style.Back", workstation);
