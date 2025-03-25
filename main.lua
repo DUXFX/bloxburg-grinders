@@ -423,9 +423,9 @@ local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
                     end
 
                     interaction:quick_interact(table_objs:FindFirstChild(flavor1), "Add");
-                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0.05);
+                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0.25);
                     interaction:quick_interact(table_objs:FindFirstChild(flavor2), "Add");
-                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0.05);
+                    task.wait(library.flags.ice_farm_legit and math.random(5, 13)/10 or 0.25);
 
 
                     if topping ~= "" then
@@ -434,10 +434,13 @@ local ice_cream = { farming = false, connections = {}, orders_completed = 0 } do
                             player.Character.Humanoid.MoveToFinished:Wait();
                         end
                         interaction:quick_interact(table_objs:FindFirstChild(topping), "Add");
-                        task.wait(library.flags.ice_farm_legit and math.random(3, 5)/10 or 0.05)
+                        task.wait(library.flags.ice_farm_legit and math.random(3, 5)/10 or 0.1)
                     end
-                    
-                    player.Character.Humanoid:MoveTo(positions.front_counter);
+
+                    local customer_position = customer.HumanoidRootPart.Position;
+                    local customer_direction = (customer_position - player.Character.HumanoidRootPart.Position).unit;
+
+                    player.Character.Humanoid:MoveTo(customer_position - customer_direction * 4.5);
                     player.Character.Humanoid.MoveToFinished:Wait();
                     task.wait(0.25);
 
