@@ -75,13 +75,7 @@ end)
 
 -- pathfinding (copied from roblox <3)
 local pathfinding = {} do
-    local path = pathfinding_service:CreatePath({
-        AgentRadius = 6,
-        AgentHeight = 6,
-        AgentCanClimb = false,
-        AgentCanJump = true
-    });
-
+    local path = pathfinding_service:CreatePath();
     local waypoints, next_waypoint_idx, reached_connection, blocked_connection;
     local completed = false;
 
