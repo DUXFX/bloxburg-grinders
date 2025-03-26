@@ -529,8 +529,8 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
         return workstation.BagsLeft.Value == 0;
     end
 
-    function supermarket_cashier:restock()
-        local workstation = self:get_workstation();
+    function supermarket_cashier:restock(workstation)
+        local workstation = workstation or self:get_workstation();
         if not self:needs_restocking() then
             return;
         end
@@ -568,7 +568,7 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
         end
         local food_dropped = utils:wait_for("Status.PlacedObjects", workstation.Occupied.Value).Value;
         if food_dropped / 3 > self:get_current_bag_count(workstation) then
-            self:restock();
+            self:restock(workstation);
             interaction:quick_interact(workstation.BagHolder, "Take");
             task.wait(0.05);
         end
@@ -589,7 +589,7 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
             workstation = self:claim_workstation();
         end
         
-        self:restock();
+        self:restock(workstation);
 
         if not self.farming then
             return;
