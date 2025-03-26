@@ -1,10 +1,6 @@
-if BLOXBURG_GRINDERS_LOADED then
-    warn("Only 1 instance of bloxburg grinders can be executed at once, to prevent issues.");
-    return;
-end
-
 getgenv().BLOXBURG_GRINDERS_LOADED = true;
 
+local our_identity = getthreadidentity and getthreadidentity() or 8;
 local required_functions = {"firesignal", "loadstring", "require", "getupvalue", "hookfunction", "checkcaller", "newcclosure"};
 
 local failed_count = 0;
@@ -138,14 +134,6 @@ local pathfinding = {} do
 end
 
 -- interaction handler
-local disable_interaction = false;
-local old_show_menu; old_show_menu = hookfunction(interaction_module.ShowMenu, newcclosure(function(...)
-    if not checkcaller() and disable_interaction == true then
-        return;
-    end
-    return old_show_menu(...);
-end))
-
 local interaction = {} do
     function interaction:click_btn(text)
         for _, v in next, utils:wait_for("PlayerGui._interactUI", player):GetChildren() do
@@ -157,7 +145,9 @@ local interaction = {} do
 
     function interaction:quick_interact(model, text, specified_part)
         local part = specified_part or model.PrimaryPart or model:FindFirstChildOfClass("MeshPart") or model:FindFirstChildOfClass("BasePart");
+        setthreadidentity(2);
         interaction_module:ShowMenu(model, part.Position, part);
+        setthreadidentity(our_identity);
         self:click_btn(text);
     end
 end
@@ -167,7 +157,9 @@ local hairdressers = {
     do_actions = {}
 } do
     function hairdressers:start_shift()
+        setthreadidentity(2);
         job_module:GoToWork("StylezHairdresser");
+        setthreadidentity(our_identity);
     end
 
     function hairdressers:get_do_actions()
@@ -176,7 +168,7 @@ local hairdressers = {
         end
 
         for _, v in next, getgc() do
-            if typeof(v) == "function" and getfenv(v).script.Name == "StylezHairdresser" and getinfo(v).name == "doAction" then
+            if typeof(v) == "function" and getfenv(v) and getfenv(v).script and getfenv(v).script.Name == "StylezHairdresser" and getinfo(v).name == "doAction" then
                 hairdressers.do_actions[#hairdressers.do_actions + 1] = v;
             end
         end
@@ -385,7 +377,9 @@ local ice_cream = { farming = false, integrity = 0, connections = {}, orders_com
         disable_interaction = true;
 
         if job_module:GetJob() ~= "BensIceCreamSeller" then
+            setthreadidentity(2);
             job_module:GoToWork("BensIceCreamSeller");
+            setthreadidentity(our_identity);
             task.wait(1);
             player.Character.Humanoid:MoveTo(positions.front_counter);
             repeat task.wait() until 5 >= player:DistanceFromCharacter(positions.front_counter);
@@ -639,7 +633,9 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
         disable_interaction = true;
 
         if job_module:GetJob() ~= "SupermarketCashier" then
+            setthreadidentity(2);
             job_module:GoToWork("SupermarketCashier");
+            setthreadidentity(our_identity);
             self:claim_workstation();
         end
         
