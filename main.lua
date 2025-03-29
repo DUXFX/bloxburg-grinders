@@ -663,7 +663,7 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
             end
         end
 
-        job_module:start_shift("SupermarketCashier");
+        job_utils:start_shift("SupermarketCashier");
         
         coroutine.wrap(function()
             local current_order;
@@ -769,7 +769,7 @@ local pizza_delivery = { current_customer = nil, max_speed = 50 }; do
         
         local time_start = tick();
         
-        moped:PivotTo(CFrame.new(1169, -45, 273))
+        moped:PivotTo(CFrame.new(1169, -45, 273));
         
         local customer_cframe = self.current_customer:WaitForChild("HumanoidRootPart").CFrame;
         
