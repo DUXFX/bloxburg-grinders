@@ -5,6 +5,7 @@ Features:
 - Hairdressers autofarm (w/legit mode).
 - Ice cream seller autofarm (w/legit mode).
 - Supermarket cashier autofarm (w/legit mode).
+- Pizza Delivery autofarm (no legit mode __yet__).
 
 Preview Video (v1.0.3): https://www.youtube.com/watch?v=o9Fu3Jw15Bs
 
