@@ -766,14 +766,16 @@ local pizza_delivery = { current_customer = nil, max_speed = 50 }; do
         until self.current_customer ~= nil;
         
         self.status.Text = "Status: Going to customer.";
+        
         local time_start = tick();
+        
         moped:PivotTo(CFrame.new(1169, -45, 273))
         
         local customer_cframe = self.current_customer:WaitForChild("HumanoidRootPart").CFrame;
         
         self:move_to(customer_cframe - Vector3.new(0, 45, 0));
-        
         player.Character.PrimaryPart.Anchored = true;
+
         repeat 
             self.status.Text = `Status: Waiting for {18 - math.floor(tick() - time_start)} seconds to pass.`;
             task.wait();
