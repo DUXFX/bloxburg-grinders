@@ -1,7 +1,6 @@
 getgenv().BLOXBURG_GRINDERS_LOADED = true;
 
-local our_identity = getthreadidentity and getthreadidentity() or 8;
-local required_functions = {"firesignal", "loadstring", "require", "getupvalue", "hookfunction", "checkcaller", "newcclosure"};
+local required_functions = {"getthreadidentity", "setthreadidentity", "hookmetamethod", "firesignal", "loadstring", "require", "getupvalue", "hookfunction", "checkcaller", "newcclosure"};
 
 local failed_count = 0;
 for _, v in next, required_functions do
@@ -16,9 +15,9 @@ if failed_count > 0 then
     return;
 end
 
+local our_identity = getthreadidentity and getthreadidentity() or 8;
 local debug_enabled = true;
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
-
 
 -- utils
 local utils = {} do
