@@ -427,7 +427,7 @@ function library:add_section(title)
 		end)
 	end
 	
-	function components:add_label(text)
+	function components:add_label(label_text)
 		local label = Instance.new("Frame")
 		label.Name = "Label"
 		label.AutomaticSize = Enum.AutomaticSize.Y
@@ -458,7 +458,7 @@ function library:add_section(title)
 		text.TextColor3 = Color3.fromRGB(255, 255, 255)
 		text.TextSize = 16
 		text.TextWrapped = true
-		text.Text = text
+		text.Text = label_text
 		text.Parent = label
 
 		local labelPadding = Instance.new("UIPadding")
