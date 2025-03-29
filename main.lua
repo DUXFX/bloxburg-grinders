@@ -19,6 +19,7 @@ end
 local debug_enabled = true;
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))();
 
+
 -- utils
 local utils = {} do
     function utils:debug_log(...)
@@ -87,6 +88,16 @@ local tween_service = game:GetService("TweenService");
 local virtual_user_service = game:GetService("VirtualUser");
 local run_service = game:GetService("RunService");
 
+-- discord message
+if not DISABLE_DISCORD then
+    setthreadidentity(2);
+    require(modules:WaitForChild("InventoryHandler")).Modules.GUIHandler:MessageBox("Did you know Bloxburg Grinders has a discord server? The link has been copied to your clipboard, simply ctrl + v into your browser to join!");
+    setthreadidentity(our_identity);
+    if setclipboard then
+        setclipboard("https://discord.gg/9QZbbgvyMk")
+    end
+end
+
 -- anti afk
 player.Idled:Connect(function()
     virtual_user_service:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame);
@@ -103,7 +114,7 @@ local job_utils = {} do
         return current_job ~= nil, current_job;
     end
 
-    function job_utils:start_shift(job)
+    function job_utils:start_shift(job, callback)
         local is_working, current_job = self:is_working();
         if is_working then
             return false, "Already working.";
@@ -111,6 +122,7 @@ local job_utils = {} do
         setthreadidentity(2);
         job_module:GoToWork(job);
         setthreadidentity(our_identity);
+        if callback then callback() end
     end
 
     function job_utils:end_shift()
@@ -155,7 +167,7 @@ local pathfinding = {} do
 
         else
             utils:debug_log("err")
-            return error(`pathfinding:walk_to | Failed to compute path from {tostring(character.PrimaryPart.Position)} to {tostring(character.PrimaryPart.Position, _type == "Vector3" and target or target.Position)}`, 0);
+            return self:walk_to(target, false)
         end
     end
 end
@@ -316,19 +328,19 @@ local hairdressers = {
                     local order_idx = self:get_order_idx(npc);
                     if order_idx then
                         for i=1, order_idx[1] do
-                            if i==1 then
+                            if i==1 or math.random(1, 10) >= 8 then
                                 continue;
                             end
+                            task.wait(library.flags.hair_farm_legit and math.random(5, 9)/10 or 0.1);
                             firesignal(style_next_button.Activated);
-                            task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         end
                         task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         for i=1, order_idx[2] do
                             if i==1 then
                                 continue;
                             end
+                            task.wait(library.flags.hair_farm_legit and math.random(5, 9)/10 or 0.1);
                             firesignal(color_next_button.Activated);
-                            task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         end
                         task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
                         firesignal(done_button.Activated);
@@ -427,7 +439,7 @@ local ice_cream = { farming = false, integrity = 0, connections = {}, orders_com
         end)();
         
         coroutine.wrap(function()
-            while self.farming do
+            while self.farming and task.wait() do
                 local workstation, customer = self:get_workstation();
                 if workstation and customer then
                     local table_objs = utils:wait_for("BensIceCream.TableObjects", locations);
@@ -438,7 +450,7 @@ local ice_cream = { farming = false, integrity = 0, connections = {}, orders_com
                     
                     utils:debug_log(`Order {self.orders_completed + 1} - Making a {flavor1} + {flavor2}{topping ~= "" and " with " .. topping or ""}.`);
 
-                    pathfinding:walk_to(positions.cup_station, true);
+                    pathfinding:walk_to(positions.cup_station);
 
                     repeat
                         interaction:quick_interact(table_objs.IceCreamCups, "Take");
@@ -533,7 +545,7 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
 
     function supermarket_cashier:claim_workstation()
         local workstation = self:get_nearest_workstation();
-        pathfinding:walk_to(workstation.Scanner.Position - Vector3.new(4, 0, 0), true);
+        pathfinding:walk_to(workstation.Scanner.Position - Vector3.new(4, 0, 0));
         interaction:quick_interact(workstation.BagHolder, "Take");
         return workstation;
     end
@@ -663,11 +675,17 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
             end
         end
 
-        job_utils:start_shift("SupermarketCashier");
+        job_utils:start_shift("SupermarketCashier", function()
+            local workstation = self:get_workstation();
+            
+            if not workstation then
+                workstation = self:claim_workstation();
+            end
+        end);
         
         coroutine.wrap(function()
             local current_order;
-            while self.farming do
+            while self.farming and task.wait() do
                 current_order = self.orders_completed;
                 task.wait(30);
                 if current_order == self.orders_completed and self.farming then
@@ -679,7 +697,7 @@ local supermarket_cashier = { farming = false,  orders_completed = 0 }; do
         end)();
         
         coroutine.wrap(function()
-            while self.farming do
+            while self.farming and task.wait() do
                 self:complete_order();
             end
         end)();
@@ -766,16 +784,14 @@ local pizza_delivery = { current_customer = nil, max_speed = 50 }; do
         until self.current_customer ~= nil;
         
         self.status.Text = "Status: Going to customer.";
-        
         local time_start = tick();
-        
-        moped:PivotTo(CFrame.new(1169, -45, 273));
+        moped:PivotTo(CFrame.new(1169, -45, 273))
         
         local customer_cframe = self.current_customer:WaitForChild("HumanoidRootPart").CFrame;
         
         self:move_to(customer_cframe - Vector3.new(0, 45, 0));
+        
         player.Character.PrimaryPart.Anchored = true;
-
         repeat 
             self.status.Text = `Status: Waiting for {18 - math.floor(tick() - time_start)} seconds to pass.`;
             task.wait();
@@ -810,9 +826,8 @@ local pizza_delivery = { current_customer = nil, max_speed = 50 }; do
             self:get_job();
             task.wait(1);
             coroutine.wrap(function()
-                while self.farming do
+                while self.farming and task.wait() do
                     self:complete_order();
-                    task.wait();
                 end
             end)();
         else
@@ -846,7 +861,7 @@ local pizza_delivery = { current_customer = nil, max_speed = 50 }; do
     end
 end
 
--- hooking
+-- hooks (sadly necessary at this stage :c)
 local old_mt; old_mt = hookmetamethod(game, "__namecall", function(...)
     local args = {...};
     if getnamecallmethod() == "InvokeServer" and string.match(debug.traceback(), "JobHandler.PizzaPlanetDelivery") then
@@ -858,7 +873,7 @@ local old_mt; old_mt = hookmetamethod(game, "__namecall", function(...)
     return old_mt(...);
 end);
 
-library:create_window("Bloxburg Grinders", 250);
+library:create_window("Bloxburg Grinders", 350);
 
 local hair_tab = library:add_section("Hairdressers");
 local ice_cream_tab = library:add_section("Ben's Ice Cream");
