@@ -328,17 +328,29 @@ local hairdressers = {
                     local order_idx = self:get_order_idx(npc);
                     if order_idx then
                         for i=1, order_idx[1] do
-                            if i==1 or math.random(1, 10) >= 8 then
+                            if i==1 then
                                 continue;
                             end
+
+                            if library.flags.hair_farm_legit and math.random(1, 7) == 5 then
+                                continue;
+                            end
+
                             task.wait(library.flags.hair_farm_legit and math.random(5, 9)/10 or 0.1);
                             firesignal(style_next_button.Activated);
                         end
+
                         task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
+                        
                         for i=1, order_idx[2] do
                             if i==1 then
                                 continue;
                             end
+
+                            if library.flags.hair_farm_legit and math.random(1, 7) == 5 then
+                                continue;
+                            end
+
                             task.wait(library.flags.hair_farm_legit and math.random(5, 9)/10 or 0.1);
                             firesignal(color_next_button.Activated);
                         end
