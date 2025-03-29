@@ -454,6 +454,9 @@ local ice_cream = { farming = false, integrity = 0, connections = {}, orders_com
             while self.farming and task.wait() do
                 local workstation, customer = self:get_workstation();
                 if workstation and customer then
+                    if library.flags.ice_farm_legit then
+                        task.wait(math.random(20, 30)/10)
+                    end
                     local table_objs = utils:wait_for("BensIceCream.TableObjects", locations);
                     
                     local flavor1 = utils:wait_for("Order.Flavor1", customer).Value;
@@ -462,7 +465,8 @@ local ice_cream = { farming = false, integrity = 0, connections = {}, orders_com
                     
                     utils:debug_log(`Order {self.orders_completed + 1} - Making a {flavor1} + {flavor2}{topping ~= "" and " with " .. topping or ""}.`);
 
-                    pathfinding:walk_to(positions.cup_station);
+                    player.Character.Humanoid:MoveTo(positions.cup_station);
+                    player.Character.Humanoid.MoveToFinished:Wait();
 
                     repeat
                         interaction:quick_interact(table_objs.IceCreamCups, "Take");
