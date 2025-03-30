@@ -335,7 +335,7 @@ local hairdressers = {
                                 continue;
                             end
 
-                            task.wait(library.flags.hair_farm_legit and math.random(5, 9)/10 or 0.1);
+                            task.wait(library.flags.hair_farm_legit and math.random(3, 7)/10 or 0.1);
                             firesignal(style_next_button.Activated);
                         end
 
@@ -350,7 +350,7 @@ local hairdressers = {
                                 continue;
                             end
 
-                            task.wait(library.flags.hair_farm_legit and math.random(5, 9)/10 or 0.1);
+                            task.wait(library.flags.hair_farm_legit and math.random(3, 7)/10 or 0.1);
                             firesignal(color_next_button.Activated);
                         end
                         task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
