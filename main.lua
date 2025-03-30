@@ -331,7 +331,7 @@ local hairdressers = {
                                 continue;
                             end
 
-                            if library.flags.hair_farm_legit and math.random(1, 7) == 5 then
+                            if library.flags.hair_farm_legit and math.random(1, 25) == 3 then
                                 continue;
                             end
 
@@ -346,7 +346,7 @@ local hairdressers = {
                                 continue;
                             end
 
-                            if library.flags.hair_farm_legit and math.random(1, 7) == 5 then
+                            if library.flags.hair_farm_legit and math.random(1, 40) == 7 then
                                 continue;
                             end
 
