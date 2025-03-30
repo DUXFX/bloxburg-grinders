@@ -320,7 +320,9 @@ local hairdressers = {
             local our_func = self:get_our_func();
             if our_func then
                 local style_next_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Style.Next", workstation);
+                local style_back_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Style.Back", workstation);
                 local color_next_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Color.Next", workstation);
+                local color_back_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Color.Back", workstation);
                 local done_button = utils:wait_for("Mirror.HairdresserGUI.Frame.Done", workstation);
                 local npc = workstation.Occupied.Value;
                 if npc ~= nil then
@@ -333,6 +335,12 @@ local hairdressers = {
 
                             if library.flags.hair_farm_legit and math.random(1, 25) == 3 then
                                 continue;
+                            end
+
+                            if library.flags.hair_farm_legit and math.random(1, 10) >= 7 then
+                                firesignal(style_back_button.Activated);
+                                task.wait(math.random(3, 7)/10);
+                                firesignal(style_next_button.Activated);
                             end
 
                             task.wait(library.flags.hair_farm_legit and math.random(3, 7)/10 or 0.1);
@@ -348,6 +356,12 @@ local hairdressers = {
 
                             if library.flags.hair_farm_legit and math.random(1, 40) == 7 then
                                 continue;
+                            end
+
+                            if library.flags.hair_farm_legit and math.random(1, 10) >= 7 then
+                                firesignal(color_back_button.Activated);
+                                task.wait(math.random(3, 7)/10);
+                                firesignal(color_next_button.Activated);
                             end
 
                             task.wait(library.flags.hair_farm_legit and math.random(3, 7)/10 or 0.1);
