@@ -100,7 +100,8 @@ function library:create_window(title, base_width)
 			ui.Parent = playerGui
 		end
 	end
-	uI.Parent =  and  or ;
+	
+	parentGui(uI);
 	
 	local start_mouse_pos, start_frame_pos, is_dragging = nil, nil, false;
 	
