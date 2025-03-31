@@ -9,9 +9,6 @@ local window_open = false;
 
 function library:create_window(title, base_width)
 	base_width = base_width or 250;
-	
-	local cloneref = cloneref or function(...) return ... end;
-
 	local uI = Instance.new("ScreenGui")
 	uI.Name = "UI"
 	uI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -86,8 +83,24 @@ function library:create_window(title, base_width)
 	mainTitle.Parent = main
 
 	main.Parent = uI
-	
-	uI.Parent = game:GetService("RunService"):IsStudio() and game:GetService("Players").LocalPlayer.PlayerGui or cloneref(game:GetService("CoreGui"));
+
+	local function parentGui(ui)
+		local cloneref = cloneref or function(...) return ... end;
+		local playerGui = game:GetService("Players").LocalPlayer.PlayerGui;
+
+		if game:GetService("RunService"):IsStudio() then
+			ui.Parent = playerGui;
+		end
+
+		local success, errMsg = pcall(function()
+			ui.Parent = cloneref(game:GetService("CoreGui"));
+		end);
+
+		if not success then
+			ui.Parent = playerGui
+		end
+	end
+	uI.Parent =  and  or ;
 	
 	local start_mouse_pos, start_frame_pos, is_dragging = nil, nil, false;
 	
