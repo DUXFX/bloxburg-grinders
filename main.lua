@@ -894,7 +894,7 @@ local old_mt; old_mt = hookmetamethod(game, "__namecall", function(...)
     return old_mt(...);
 end);
 
-library:create_window("Bloxburg Grinders", 350);
+library:create_window("Bloxburg Grinders", 220);
 
 local hair_tab = library:add_section("Hairdressers");
 local ice_cream_tab = library:add_section("Ben's Ice Cream");
