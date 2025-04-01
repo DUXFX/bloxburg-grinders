@@ -339,11 +339,11 @@ local hairdressers = {
                                 firesignal(style_next_button.Activated);
                             end
 
-                            task.wait(library.flags.hair_farm_legit and math.random(2, 5)/10 or 0.1);
+                            task.wait(library.flags.hair_farm_legit and math.random(2, 5)/20 or 0.1);
                             firesignal(style_next_button.Activated);
                         end
 
-                        task.wait(library.flags.hair_farm_legit and math.random(2, 5)/10 or 0.1);
+                        task.wait(library.flags.hair_farm_legit and math.random(2, 5)/20 or 0.1);
                         
                         for i=1, order_idx[2] do
                             if i==1 then
@@ -352,14 +352,14 @@ local hairdressers = {
 
                             if library.flags.hair_farm_legit and math.random(1, 20) == 7 then
                                 firesignal(color_back_button.Activated);
-                                task.wait(math.random(3, 7)/10);
+                                task.wait(math.random(2, 5)/10);
                                 firesignal(color_next_button.Activated);
                             end
 
-                            task.wait(library.flags.hair_farm_legit and math.random(3, 7)/10 or 0.1);
+                            task.wait(library.flags.hair_farm_legit and math.random(2, 5)/10 or 0.1);
                             firesignal(color_next_button.Activated);
                         end
-                        task.wait(library.flags.hair_farm_legit and math.random(3, 6)/10 or 0.1);
+                        task.wait(library.flags.hair_farm_legit and math.random(2, 5)/10 or 0.1);
                         firesignal(done_button.Activated);
                         repeat task.wait() until workstation.Occupied.Value ~= npc
                         repeat task.wait() until tostring(workstation.Occupied.Value) == "StylezHairStudioCustomer"
