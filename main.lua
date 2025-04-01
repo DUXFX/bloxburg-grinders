@@ -335,15 +335,15 @@ local hairdressers = {
 
                             if library.flags.hair_farm_legit and math.random(1, 10) >= 7 then
                                 firesignal(style_back_button.Activated);
-                                task.wait(math.random(2, 5)/10);
+                                task.wait(math.random(3, 5)/12);
                                 firesignal(style_next_button.Activated);
                             end
 
-                            task.wait(library.flags.hair_farm_legit and math.random(2, 5)/20 or 0.1);
+                            task.wait(library.flags.hair_farm_legit and math.random(3, 5)/12 or 0.1);
                             firesignal(style_next_button.Activated);
                         end
 
-                        task.wait(library.flags.hair_farm_legit and math.random(2, 5)/20 or 0.1);
+                        task.wait(library.flags.hair_farm_legit and math.random(2, 5)/12 or 0.1);
                         
                         for i=1, order_idx[2] do
                             if i==1 then
