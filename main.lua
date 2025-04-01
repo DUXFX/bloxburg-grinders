@@ -87,6 +87,7 @@ local tween_service = game:GetService("TweenService");
 local virtual_user_service = game:GetService("VirtualUser");
 local run_service = game:GetService("RunService");
 local gui_handler = require(modules:WaitForChild("InventoryHandler")).Modules.GUIHandler;
+
 -- discord message
 if not DISABLE_DISCORD then
     setthreadidentity(2);
@@ -882,15 +883,6 @@ local pizza_delivery = { current_customer = nil, max_speed = 50 }; do
     end
 end
 
-local instant_deliver = {}; do
-    function instant_deliver:start_work()
-        task.spawn(function()
-            gui_handler:AlertBox("You have been PERMANENTLY BANNED from bloxburg for: exploits/bots. Your roblox account has been added to the next Hyperion ban wave. - Bitdancer!");
-        end);
-        task.wait(3);
-        player:Kick("Moderation note: 1042 - ExploitDetected");
-    end 
-end
 -- hooks (sadly necessary at this stage :c)
 local old_mt; old_mt = hookmetamethod(game, "__namecall", function(...)
     local args = {...};
@@ -931,14 +923,6 @@ supermarket_cashier_tab:add_toggle("Legit Mode", "market_cashier_farm_legit", fu
 
 pizza_delivery_tab:add_toggle("Autofarm", "pizza_delivery_farm", function(state)
     pizza_delivery:toggle_farming(state);
-end);
-
-instant_delivery_tab:add_toggle("Deliver Pizzas FAST!", "instant_deliver", function(state)
-    task.spawn(function()
-        pizza_delivery:toggle_farming(state);
-    end);
-    task.wait(36);
-    instant_deliver:start_work(state);
 end);
 
 pizza_delivery.status = pizza_delivery_tab:add_label("Status: Disabled.").Text;
