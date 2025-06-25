@@ -12,5 +12,5 @@ Preview Video (v1.0.4): https://www.youtube.com/watch?v=o9Fu3Jw15Bs
 Only tested on AWP
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/refs/heads/main/main.lua"))();
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DUXFX/bloxburg-grinders/refs/heads/main/main.lua"))();
 ```
