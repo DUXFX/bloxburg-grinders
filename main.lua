@@ -50,7 +50,7 @@ local ourIdentity = getthreadidentity()
 local debugEnabled = true
 
 -- Load external UI library
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"))()
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/DUXFX/bloxburg-grinders/refs/heads/main/ui.lua"))()
 
 -- =============================================================================
 -- ||                                UTILITIES                                ||
