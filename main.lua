@@ -5,6 +5,122 @@ end
 getgenv().BLOXBURG_GRINDERS_LOADED = true
 
 --==============================================================================
+-- EMBEDDED UI LIBRARY
+--==============================================================================
+
+local library = {}
+library.flags = {}
+
+function library:create_window(title, width)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "BloxburgGrindersUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = game:GetService("CoreGui")
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, width, 0, 300)
+    mainFrame.Position = UDim2.new(0.5, -width / 2, 0.5, -150)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    mainFrame.BorderColor3 = Color3.fromRGB(80, 80, 80)
+    mainFrame.BorderSizePixel = 2
+    mainFrame.Draggable = true
+    mainFrame.Active = true
+    mainFrame.Parent = screenGui
+
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.Size = UDim2.new(1, 0, 0, 30)
+    titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    titleBar.Parent = mainFrame
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "TitleLabel"
+    titleLabel.Size = UDim2.new(1, 0, 1, 0)
+    titleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.Font = Enum.Font.SourceSansBold
+    titleLabel.Text = title
+    titleLabel.TextSize = 18
+    titleLabel.Parent = titleBar
+
+    local container = Instance.new("UIListLayout")
+    container.Parent = mainFrame
+    container.SortOrder = Enum.SortOrder.LayoutOrder
+    container.Padding = UDim.new(0, 5)
+    container.FillDirection = Enum.FillDirection.Vertical
+    container.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    
+    local padding = Instance.new("UIPadding")
+    padding.Parent = mainFrame
+    padding.PaddingTop = UDim.new(0, 35)
+    padding.PaddingLeft = UDim.new(0, 5)
+    padding.PaddingRight = UDim.new(0, 5)
+
+    library.mainFrame = mainFrame
+    return library
+end
+
+function library:add_section(name)
+    local sectionLabel = Instance.new("TextLabel")
+    sectionLabel.Name = name
+    sectionLabel.Size = UDim2.new(1, -10, 0, 25)
+    sectionLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    sectionLabel.BackgroundTransparency = 1
+    sectionLabel.Font = Enum.Font.SourceSansBold
+    sectionLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    sectionLabel.TextSize = 16
+    sectionLabel.Text = name
+    sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    sectionLabel.Parent = library.mainFrame
+    return library
+end
+
+function library:add_toggle(text, flag, callback)
+    library.flags[flag] = false
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Name = flag
+    toggleButton.Size = UDim2.new(1, -10, 0, 30)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleButton.Font = Enum.Font.SourceSans
+    toggleButton.TextSize = 16
+    toggleButton.Text = text .. ": Off"
+    toggleButton.Parent = library.mainFrame
+
+    toggleButton.MouseButton1Click:Connect(function()
+        library.flags[flag] = not library.flags[flag]
+        if library.flags[flag] then
+            toggleButton.Text = text .. ": On"
+            toggleButton.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+        else
+            toggleButton.Text = text .. ": Off"
+            toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        end
+        if callback then
+            callback(library.flags[flag])
+        end
+    end)
+    return library
+end
+
+function library:add_label(text)
+    local label = Instance.new("TextLabel")
+    label.Name = "InfoLabel"
+    label.Size = UDim2.new(1, -10, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.SourceSans
+    label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    label.Text = text
+    label.TextSize = 14
+    label.TextWrapped = true
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = library.mainFrame
+    return library
+end
+
+--==============================================================================
 -- CORE SERVICES AND VARIABLES
 --==============================================================================
 
@@ -20,7 +136,6 @@ local ourIdentity = getthreadidentity and getthreadidentity() or 8
 -- Script Configuration
 local config = {
     debugEnabled = true,
-    uiLibraryUrl = "https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"
 }
 
 --==============================================================================
@@ -54,12 +169,6 @@ end
 --==============================================================================
 -- GAME MODULES & HANDLERS
 --==============================================================================
-
-local library = loadstring(game:HttpGet(config.uiLibraryUrl))()
-if not library then
-    warn("[Bloxburg Grinders] CRITICAL: Failed to load UI library.")
-    return
-end
 
 local modules = utils:waitFor("PlayerScripts.Modules", localPlayer)
 local jobHandler = require(utils:waitFor("JobHandler", modules))
