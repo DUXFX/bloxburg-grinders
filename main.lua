@@ -323,7 +323,7 @@ function pizzaDeliveryJob:teleport(targetCFrame)
     utils:debugLog("Teleport successful.")
 end
 
---- Gets a pizza from the conveyor. Returns when a customer is assigned.
+--- Initiates the process of getting a pizza.
 function pizzaDeliveryJob:getPizza()
     local pizzaBox = localPlayer.Character:FindFirstChild("Pizza Box")
     if pizzaBox then pizzaBox:Destroy() end -- Remove any old box
@@ -331,30 +331,21 @@ function pizzaDeliveryJob:getPizza()
     local pizzaStack = utils:waitFor("Workspace.Environment.Locations.PizzaPlanet.Conveyor.MovingBoxes")
     if not pizzaStack or #pizzaStack:GetChildren() == 0 then
         utils:debugLog("No pizzas available on the conveyor.")
-        return false
+        return
     end
     
-    -- Teleport to the pizza spawn
     self:teleport(self.pizzaPlanetLocation)
     task.wait(0.2)
 
-    self.currentCustomer = nil
+    self.currentCustomer = nil -- Reset customer before getting a new one
+    
     setthreadidentity(2)
+    -- This action fires the remote event that our hook will capture
     interactionHandler:ShowMenu(pizzaStack:GetChildren()[1], pizzaStack:GetChildren()[1].Position, pizzaStack:GetChildren()[1])
     firesignal(utils:waitFor("PlayerGui._interactUI.Use.Button", localPlayer).Activated)
     setthreadidentity(ourIdentity)
-
-    -- Wait until the game assigns a customer via the hook
-    local timeout = 0
-    repeat task.wait() timeout = timeout + 1 until self.currentCustomer or not self.isFarming or timeout > 100
     
-    if self.currentCustomer then
-        utils:debugLog("Pizza collected and customer assigned:", self.currentCustomer.Name)
-        return true
-    end
-    
-    utils:debugLog("Failed to get a customer after taking pizza.")
-    return false
+    utils:debugLog("Pizza collection initiated. Waiting for customer assignment...")
 end
 
 --- Delivers the pizza to the current customer.
@@ -392,12 +383,22 @@ function pizzaDeliveryJob:mainLoop()
 
     while self.isFarming do
         local success, err = pcall(function()
-            if self:getPizza() then
+            self:getPizza()
+            
+            -- Wait here for the hook to assign a customer
+            local timeout = 0
+            repeat 
+                task.wait() 
+                timeout = timeout + 1 
+            until self.currentCustomer or not self.isFarming or timeout > 100 -- Wait up to 10 seconds
+
+            if self.currentCustomer then
+                utils:debugLog("Customer assigned. Proceeding to delivery.")
                 task.wait(math.random(5, 10) / 10) -- Short pause before delivering
                 self:deliverPizza()
                 task.wait(math.random(10, 20) / 10) -- Short pause after delivering
             else
-                utils:debugLog("Retrying pizza collection in 3 seconds.")
+                utils:debugLog("Did not get a customer after 10 seconds. Retrying...")
                 task.wait(3)
             end
         end)
