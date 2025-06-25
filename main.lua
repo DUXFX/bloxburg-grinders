@@ -20,7 +20,7 @@ local ourIdentity = getthreadidentity and getthreadidentity() or 8
 -- Script Configuration
 local config = {
     debugEnabled = true,
-    uiLibraryUrl = "https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"
+    uiLibraryUrl = "https://raw.githubusercontent.com/DUXFX/bloxburg-grinders/refs/heads/main/ui.lua"
 }
 
 --==============================================================================
