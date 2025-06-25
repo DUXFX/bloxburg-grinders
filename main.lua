@@ -1,4 +1,3 @@
-
 if getgenv().BLOXBURG_GRINDERS_LOADED then
     warn("[Bloxburg Grinders] Script is already loaded.")
     return
@@ -302,165 +301,16 @@ function hairdresserJob:toggleFarming(state)
 end
 
 --==============================================================================
--- PIZZA DELIVERY JOB MODULE (INSTANT TELEPORT)
---==============================================================================
-
-local pizzaDeliveryJob = {
-    isFarming = false,
-    currentCustomer = nil,
-    pizzaPlanetLocation = CFrame.new(1169, 15, 273) -- Safe spot at Pizza Planet
-}
-
---- Teleports the player character instantly to a target CFrame.
-function pizzaDeliveryJob:teleport(targetCFrame)
-    local character = localPlayer.Character
-    if not character or not character.PrimaryPart then return end
-    
-    local rootPart = character.PrimaryPart
-    rootPart.Anchored = true
-    rootPart.CFrame = targetCFrame
-    task.wait() -- Allow physics to update
-    rootPart.Anchored = false
-    utils:debugLog("Teleport successful.")
-end
-
---- Gets a pizza from the conveyor. Returns when a customer is assigned.
-function pizzaDeliveryJob:getPizza()
-    local pizzaBox = localPlayer.Character:FindFirstChild("Pizza Box")
-    if pizzaBox then pizzaBox:Destroy() end -- Remove any old box
-
-    local pizzaStack = utils:waitFor("Workspace.Environment.Locations.PizzaPlanet.Conveyor.MovingBoxes")
-    if not pizzaStack or #pizzaStack:GetChildren() == 0 then
-        utils:debugLog("No pizzas available on the conveyor.")
-        return false
-    end
-    
-    -- Teleport to the pizza spawn
-    self:teleport(self.pizzaPlanetLocation)
-    task.wait(0.2)
-
-    self.currentCustomer = nil
-    setthreadidentity(2)
-    interactionHandler:ShowMenu(pizzaStack:GetChildren()[1], pizzaStack:GetChildren()[1].Position, pizzaStack:GetChildren()[1])
-    firesignal(utils:waitFor("PlayerGui._interactUI.Use.Button", localPlayer).Activated)
-    setthreadidentity(ourIdentity)
-
-    -- Wait until the game assigns a customer via the hook
-    local timeout = 0
-    repeat task.wait() timeout = timeout + 1 until self.currentCustomer or not self.isFarming or timeout > 100
-    
-    if self.currentCustomer then
-        utils:debugLog("Pizza collected and customer assigned:", self.currentCustomer.Name)
-        return true
-    end
-    
-    utils:debugLog("Failed to get a customer after taking pizza.")
-    return false
-end
-
---- Delivers the pizza to the current customer.
-function pizzaDeliveryJob:deliverPizza()
-    if not self.currentCustomer or not self.currentCustomer.PrimaryPart then
-        utils:debugLog("Cannot deliver: Invalid customer.")
-        return
-    end
-
-    local customerRoot = self.currentCustomer.PrimaryPart
-    -- Teleport to a safe spot right in front of the customer
-    local targetPosition = customerRoot.CFrame * CFrame.new(0, 0, 5)
-    self:teleport(targetPosition)
-    task.wait(0.5) -- Wait to ensure interaction is possible
-
-    setthreadidentity(2)
-    interactionHandler:ShowMenu(self.currentCustomer, customerRoot.Position, customerRoot)
-    firesignal(utils:waitFor("PlayerGui._interactUI.Give.Button", localPlayer).Activated)
-    setthreadidentity(ourIdentity)
-    
-    -- Wait for the pizza box to disappear from our character
-    local timeout = 0
-    repeat task.wait() timeout = timeout + 1 until not localPlayer.Character:FindFirstChild("Pizza Box") or not self.isFarming or timeout > 50
-
-    if not localPlayer.Character:FindFirstChild("Pizza Box") then
-        utils:debugLog("Delivery successful!")
-    else
-        utils:debugLog("Delivery failed, pizza box still present.")
-    end
-end
-
---- The main loop for pizza delivery.
-function pizzaDeliveryJob:mainLoop()
-    jobUtils:startShift("PizzaPlanetDelivery")
-
-    while self.isFarming do
-        local success, err = pcall(function()
-            if self:getPizza() then
-                task.wait(math.random(5, 10) / 10) -- Short pause before delivering
-                self:deliverPizza()
-                task.wait(math.random(10, 20) / 10) -- Short pause after delivering
-            else
-                utils:debugLog("Retrying pizza collection in 3 seconds.")
-                task.wait(3)
-            end
-        end)
-        if not success then
-            utils:debugLog("Error in Pizza Delivery loop:", err)
-            task.wait(5) -- Wait after error
-        end
-    end
-end
-
-function pizzaDeliveryJob:toggleFarming(state)
-    self.isFarming = state
-    utils:debugLog("Pizza Delivery autofarm toggled:", state)
-    if self.isFarming then
-        task.spawn(function()
-            self:mainLoop()
-        end)
-    end
-end
-
---==============================================================================
--- METAMETHOD HOOKS (FOR PIZZA DELIVERY)
---==============================================================================
-
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-
-    -- Intercept the server call that assigns a pizza customer
-    if pizzaDeliveryJob.isFarming and method == "InvokeServer" and self.Name == "Remotes" and args[1] == "GetCustomer" then
-        local customer = oldNamecall(self, ...)
-        if typeof(customer) == "Instance" and customer:IsA("Model") then
-            utils:debugLog("Hook captured customer:", customer.Name)
-            pizzaDeliveryJob.currentCustomer = customer
-        end
-        return customer
-    end
-
-    return oldNamecall(self, ...)
-end)
-
-
---==============================================================================
 -- UI SETUP
 --==============================================================================
 
 library:create_window("Bloxburg Grinders", 250)
-
--- Hairdresser Tab
 local hairTab = library:add_section("Stylez Hairdresser (Humanized)")
+
 hairTab:add_toggle("Autofarm", "hair_farm", function(state)
     hairdresserJob:toggleFarming(state)
 end)
-hairTab:add_label("Uses human-like behavior to avoid detection.")
 
--- Pizza Delivery Tab
-local pizzaTab = library:add_section("Pizza Delivery (Instant TP)")
-pizzaTab:add_toggle("Autofarm", "pizza_farm", function(state)
-    pizzaDeliveryJob:toggleFarming(state)
-end)
-pizzaTab:add_label("Uses instant teleport for max speed.")
+hairTab:add_label("This version uses human-like behavior to avoid detection.")
 
-
-utils:debugLog("Bloxburg Grinders - Multi-Job Autofarm loaded!")
+utils:debugLog("Bloxburg Grinders - Humanized Autofarm loaded!
