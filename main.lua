@@ -1,220 +1,316 @@
-local _g = getfenv();
-local _s = string;
-local _t = table;
-local _m = math;
-local _b = bit32;
-
-_g.BLOXBURG_GRINDERS_LOADED = true;
-
-local function _d(t)
-    local r = ""
-    for _, c in ipairs(t) do
-        r = r .. _s.char(c)
-    end
-    return r
+if getgenv().BLOXBURG_GRINDERS_LOADED then
+    warn("[Bloxburg Grinders] Script is already loaded.")
+    return
 end
+getgenv().BLOXBURG_GRINDERS_LOADED = true
 
-local _strs = {
-    _d({103, 101, 116, 116, 104, 114, 101, 97, 100, 105, 100, 101, 110, 116, 105, 116, 121}),
-    _d({115, 101, 116, 116, 104, 114, 101, 97, 100, 105, 100, 101, 110, 116, 105, 116, 121}),
-    _d({104, 111, 111, 107, 109, 101, 116, 97, 109, 101, 116, 104, 111, 100}),
-    _d({102, 105, 114, 101, 115, 105, 103, 110, 97, 108}),
-    _d({108, 111, 97, 100, 115, 116, 114, 105, 110, 103}),
-    _d({114, 101, 113, 117, 105, 114, 101}),
-    _d({103, 101, 116, 117, 112, 118, 97, 108, 117, 101}),
-    _d({104, 111, 111, 107, 102, 117, 110, 99, 116, 105, 111, 110}),
-    _d({99, 104, 101, 99, 107, 99, 97, 108, 108, 101, 114}),
-    _d({110, 101, 119, 99, 99, 108, 111, 115, 117, 114, 101})
+--==============================================================================
+-- CORE SERVICES AND VARIABLES
+--==============================================================================
+
+-- Roblox Services
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local VirtualUserService = game:GetService("VirtualUser")
+
+-- Player and Environment
+local localPlayer = Players.LocalPlayer
+local ourIdentity = getthreadidentity and getthreadidentity() or 8
+
+-- Script Configuration
+local config = {
+    debugEnabled = true,
+    uiLibraryUrl = "https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"
 }
 
-for _, v in ipairs(_strs) do
-    if not _g[v] then
-        warn(_d({77, 105, 115, 115, 105, 110, 103, 32, 102, 117, 110, 99, 116, 105, 111, 110, 58, 32}) .. v)
-        return
+--==============================================================================
+-- UTILITY FUNCTIONS
+--==============================================================================
+
+local utils = {}
+
+function utils:debugLog(...)
+    if config.debugEnabled then
+        warn("[Bloxburg Grinders]", ...)
     end
 end
 
-local _i = _g[_strs[1]] and _g[_strs[1]]() or 8
-local _lib = _g[_strs[5]](game[_d({72, 116, 116, 112, 71, 101, 116})](_g, _d({104, 116, 116, 112, 115, 58, 47, 47, 114, 97, 119, 46, 103, 105, 116, 104, 117, 98, 117, 115, 101, 114, 99, 111, 110, 116, 101, 110, 116, 46, 99, 111, 109, 47, 105, 111, 112, 115, 101, 99, 47, 98, 108, 111, 120, 98, 117, 114, 103, 45, 103, 114, 105, 110, 100, 101, 114, 115, 47, 109, 97, 105, 110, 47, 117, 105, 46, 108, 117, 97})))()
-
-local _u = {}
-_u.f = function(p, s, w)
-    local ps = _s.split(p, ".")
-    local bi = s
-    if not bi then
-        local suc, res = pcall(game[_d({71, 101, 116, 83, 101, 114, 118, 105, 99, 101})], game, ps[1])
-        bi = res
-        _t.remove(ps, 1)
-    end
-    for _, seg in ipairs(ps) do
-        if w then
-            bi = bi[_d({87, 97, 105, 116, 70, 111, 114, 67, 104, 105, 108, 100})](bi, seg, 10)
-        else
-            bi = bi[_d({70, 105, 110, 100, 70, 105, 114, 115, 116, 67, 104, 105, 108, 100})](bi, seg)
+function utils:waitFor(path, start, timeout)
+    local segments = path:split(".")
+    local current = start or game
+    for i, segment in ipairs(segments) do
+        local success, result = pcall(function()
+            return current:WaitForChild(segment, timeout or 10)
+        end)
+        if not success or not result then
+            utils:debugLog(`WaitFor failed at segment '{segment}' in path '{path}'`)
+            return nil
         end
-        if not bi then return nil end
+        current = result
     end
-    return bi
+    return current
 end
 
-local _p = _u.f(_d({80, 108, 97, 121, 101, 114, 115, 46, 76, 111, 99, 97, 108, 80, 108, 97, 121, 101, 114}))
-local _m_p = _u.f(_d({80, 108, 97, 121, 101, 114, 83, 99, 114, 105, 112, 116, 115, 46, 77, 111, 100, 117, 108, 101, 115}), _p, true)
-local _j_m = _g[_strs[6]](_u.f(_d({74, 111, 98, 72, 97, 110, 100, 108, 101, 114}), _m_p, true))
-local _i_m = _g[_strs[6]](_u.f(_d({73, 110, 116, 101, 114, 97, 99, 116, 105, 111, 110, 72, 97, 110, 100, 108, 101, 114}), _m_p, true))
-local _l = _u.f(_d({87, 111, 114, 107, 115, 112, 97, 99, 101, 46, 69, 110, 118, 105, 114, 111, 110, 109, 101, 110, 116, 46, 76, 111, 99, 97, 116, 105, 111, 110, 115}), nil, true)
-local _v_u = game[_d({71, 101, 116, 83, 101, 114, 118, 105, 99, 101})](game, _d({86, 105, 114, 116, 117, 97, 108, 85, 115, 101, 114}))
-local _g_h = _g[_strs[6]](_m_p[_d({87, 97, 105, 116, 70, 111, 114, 67, 104, 105, 108, 100})](_m_p, _d({73, 110, 118, 101, 110, 116, 111, 114, 121, 72, 97, 110, 100, 108, 101, 114})))[_d({77, 111, 100, 117, 108, 101, 115})][_d({71, 85, 73, 72, 97, 110, 100, 108, 101, 114})]
+--==============================================================================
+-- GAME MODULES & HANDLERS
+--==============================================================================
 
-_p.Idled:Connect(function()
-    _v_u[_d({66, 117, 116, 116, 111, 110, 50, 68, 111, 119, 110})](_v_u, Vector2.new(0,0),workspace.CurrentCamera.CFrame)
-    task.wait(0.5)
-    _v_u[_d({66, 117, 116, 116, 111, 110, 50, 85, 112})](_v_u, Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+local library = loadstring(game:HttpGet(config.uiLibraryUrl))()
+if not library then
+    warn("[Bloxburg Grinders] CRITICAL: Failed to load UI library.")
+    return
+end
+
+local modules = utils:waitFor("PlayerScripts.Modules", localPlayer)
+local jobHandler = require(utils:waitFor("JobHandler", modules))
+local interactionHandler = require(utils:waitFor("InteractionHandler", modules))
+
+-- Anti-AFK
+localPlayer.Idled:Connect(function()
+    VirtualUserService:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+    task.wait(0.2)
+    VirtualUserService:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+    utils:debugLog("Anti-AFK triggered.")
 end)
 
-local _j_u = {}
-_j_u.is = function()
-    _g[_strs[2]](2)
-    local cj = _j_m[_d({71, 101, 116, 74, 111, 98})](_j_m)
-    _g[_strs[2]](_i)
-    return cj ~= nil, cj
-end
-_j_u.st = function(j)
-    if _j_u.is() then return end
-    _g[_strs[2]](2)
-    _j_m[_d({71, 111, 84, 111, 87, 111, 114, 107})](_j_m, j)
-    _g[_strs[2]](_i)
-end
-_j_u.en = function()
-    local b = _u.f(_d({80, 108, 97, 121, 101, 114, 71, 117, 105, 46, 77, 97, 105, 110, 71, 85, 73, 46, 66, 97, 114, 46, 67, 104, 97, 114, 77, 101, 110, 117, 46, 87, 111, 114, 107, 70, 114, 97, 109, 101, 46, 87, 111, 114, 107, 70, 114, 97, 109, 101, 46, 65, 99, 116, 105, 111, 110}), _p, true)
-    _g[_strs[4]](b.Activated)
+--==============================================================================
+-- JOB UTILS
+--==============================================================================
+
+local jobUtils = {}
+
+function jobUtils:isWorking(jobName)
+    setthreadidentity(2)
+    local currentJob = jobHandler:GetJob()
+    setthreadidentity(ourIdentity)
+    return currentJob == jobName
 end
 
-local _int = {}
-_int.q = function(m, t, sp)
-    local prt = sp or m.PrimaryPart or m[_d({70, 105, 110, 100, 70, 105, 114, 115, 116, 67, 104, 105, 108, 100, 79, 102, 67, 108, 97, 115, 115})](m, _d({77, 101, 115, 104, 80, 97, 114, 116})) or m[_d({70, 105, 110, 100, 70, 105, 114, 115, 116, 67, 104, 105, 108, 100, 79, 102, 67, 108, 97, 115, 115})](m, _d({66, 97, 115, 101, 80, 97, 114, 116}))
-    _g[_strs[2]](2)
-    _i_m[_d({83, 104, 111, 119, 77, 101, 110, 117})](_i_m, m, prt.Position, prt)
-    _g[_strs[2]](_i)
-    for _, v in ipairs(_u.f(_d({80, 108, 97, 121, 101, 114, 71, 117, 105, 46, 95, 105, 110, 116, 101, 114, 97, 99, 116, 85, 73}), _p, true):GetChildren()) do
-        if v:FindFirstChild(_d({66, 117, 116, 116, 111, 110})) and v.Button:FindFirstChild(_d({84, 101, 120, 116, 76, 97, 98, 101, 108})) and v.Button.TextLabel.Text == t then
-            _g[_strs[4]](v.Button.Activated)
-        end
+function jobUtils:startShift(jobName)
+    if jobUtils:isWorking(jobName) then return true end
+    
+    setthreadidentity(2)
+    local currentJob = jobHandler:GetJob()
+    if currentJob then
+        jobHandler:EndShift(currentJob)
     end
+    task.wait(1.5) -- Wait after ending previous shift
+    jobHandler:GoToWork(jobName)
+    setthreadidentity(ourIdentity)
+    
+    utils:debugLog(`Started shift for: {jobName}`)
+    task.wait(2) -- Wait for teleport
 end
 
-local _h = {f = false, a = {}}
-_h.get_a = function()
-    if #_h.a == 4 then return _h.a end
-    for _, v in ipairs(getgc(true)) do
-        if typeof(v) == "function" then
-            local i = getinfo(v)
-            if i.name == _d({100, 111, 65, 99, 116, 105, 111, 110}) and i.source and _s.find(i.source, _d({83, 116, 121, 108, 101, 122, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114})) then
-                _t.insert(_h.a, v)
+--==============================================================================
+-- HAIRDRESSER JOB MODULE
+--==============================================================================
+
+local hairdresserJob = {
+    isFarming = false,
+    cachedFunctions = {},
+    cachedWorkstationData = {}
+}
+
+--- Caches core game functions to avoid repeated memory scans.
+function hairdresserJob:cacheGameFunctions()
+    if self.cachedFunctions.doAction then return end
+    utils:debugLog("Searching for core game functions in memory (this runs only once)...")
+    for _, func in ipairs(getgc(true)) do
+        if typeof(func) == "function" then
+            local info = getinfo(func)
+            if info.name == "doAction" and info.source and string.find(info.source, "StylezHairdresser") then
+                if getupvalue(func, 3) == localPlayer then
+                    self.cachedFunctions.doAction = func
+                    self.cachedFunctions.hairStyles = getupvalue(func, 6)
+                    self.cachedFunctions.hairColors = getupvalue(func, 8)
+                    utils:debugLog("Successfully cached all required game functions.")
+                    return
+                end
             end
         end
     end
-    return _h.a
 end
-_h.get_f = function()
-    for _, fn in ipairs(_h.get_a()) do
-        if _g[_strs[7]](fn, 3) == _p then return fn end
-    end
-end
-_h.get_w = function()
-    local wf = _u.f(_d({83, 116, 121, 108, 101, 122, 72, 97, 105, 114, 83, 116, 117, 100, 105, 111, 46, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114, 87, 111, 114, 107, 115, 116, 97, 116, 105, 111, 110, 115}), _l)
-    local ws = {}
-    for _, w in ipairs(wf:GetChildren()) do
-        if w.Name == _d({87, 111, 114, 107, 115, 116, 97, 116, 105, 111, 110}) and tostring(w.InUse.Value) == _d({110, 105, 108, 108}) then
-            _t.insert(ws, w)
+
+function hairdresserJob:getWorkstations()
+    local workstationFolder = utils:waitFor("Workspace.Environment.Locations.StylezHairStudio.HairdresserWorkstations")
+    if not workstationFolder then return {}, {} end
+
+    local available, occupiedByPlayer = {}, nil
+    for _, station in ipairs(workstationFolder:GetChildren()) do
+        if station.Name == "Workstation" then
+            if station.InUse.Value == localPlayer then
+                occupiedByPlayer = station
+                break -- If we found our station, no need to check others
+            elseif tostring(station.InUse.Value) == "nil" then
+                table.insert(available, station)
+            end
         end
     end
-    return ws
+    return available, occupiedByPlayer
 end
-_h.get_mw = function()
-    local wf = _u.f(_d({83, 116, 121, 108, 101, 122, 72, 97, 105, 114, 83, 116, 117, 100, 105, 111, 46, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114, 87, 111, 114, 107, 115, 116, 97, 116, 105, 111, 110, 115}), _l)
-    for _, w in ipairs(wf:GetChildren()) do
-        if w.Name == _d({87, 111, 114, 107, 115, 116, 97, 116, 105, 111, 110}) and w.InUse.Value == _p then return w end
+
+--- Selects a workstation with some randomness to appear more human.
+function hairdresserJob:selectAndClaimWorkstation()
+    local available, myStation = self:getWorkstations()
+    if myStation then return myStation end -- Already have a station
+
+    if #available == 0 then
+        utils:debugLog("No available workstations found.")
+        return nil
     end
-end
-_h.get_nw = function()
-    local ws, cd, md = _h.get_w(), nil, math.huge
-    for _, s in ipairs(ws) do
-        local d = _p:DistanceFromCharacter(s.Mirror.Position)
-        if d < md then md, cd = d, s end
+
+    -- Sort by distance
+    table.sort(available, function(a, b)
+        return localPlayer:DistanceFromCharacter(a.Mirror.Position) < localPlayer:DistanceFromCharacter(b.Mirror.Position)
+    end)
+    
+    -- Choose a station. 70% chance to pick the closest, 30% to pick the 2nd/3rd closest.
+    local targetStation
+    local choice = math.random()
+    if choice < 0.7 or #available < 2 then
+        targetStation = available[1]
+    else
+        targetStation = available[math.min(#available, math.random(2, 3))]
     end
-    return cd
-end
-_h.cl_w = function(w)
-    if not w then return end
-    (_p.Character or _p.CharacterAdded:Wait()).Humanoid:MoveTo(w.Mat.Position)
-    local nb = _u.f(_d({77, 105, 114, 114, 111, 114, 46, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114, 71, 85, 73, 46, 70, 114, 97, 109, 101, 46, 83, 116, 121, 108, 101, 46, 78, 101, 120, 116}), w, true)
-    local bb = _u.f(_d({77, 105, 114, 114, 111, 114, 46, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114, 71, 85, 73, 46, 70, 114, 97, 109, 101, 46, 83, 116, 121, 108, 101, 46, 66, 97, 99, 107}), w, true)
-    local att = 0
+    
+    utils:debugLog("Selected workstation:", targetStation:GetFullName())
+    
+    -- Claim it
+    (localPlayer.Character or localPlayer.CharacterAdded:Wait()).Humanoid:MoveTo(targetStation.Mat.Position)
+    local nextButton = utils:waitFor("Mirror.HairdresserGUI.Frame.Style.Next", targetStation)
+    local backButton = utils:waitFor("Mirror.HairdresserGUI.Frame.Style.Back", targetStation)
+
+    local attempts = 0
     repeat
-        _g[_strs[4]](nb.Activated)
-        task.wait()
-        _g[_strs[4]](bb.Activated)
-        task.wait(0.2)
-        att = att + 1
-    until w.InUse.Value == _p or att > 20
-    return w.InUse.Value == _p and w or nil
-end
-_h.get_oi = function(n)
-    local sv = _u.f(_d({79, 114, 100, 101, 114, 46, 83, 116, 121, 108, 101}), n, true)
-    local cv = _u.f(_d({79, 114, 100, 101, 114, 46, 67, 111, 108, 111, 114}), n, true)
-    if not sv or not cv then return end
-    local of = _h.get_f()
-    local hs = _g[_strs[7]](of, 6)
-    local hc = _g[_strs[7]](of, 8)
-    local si = _t.find(hs, sv.Value)
-    local ci = _t.find(hc, cv.Value)
-    return si, ci
-end
-_h.comp = function()
-    if not _h.f then return end
-    local w = _h.get_mw() or _h.cl_w(_h.get_nw())
-    if not w then task.wait(5) return end
-    local n = w.Occupied.Value
-    if not n or n.Name ~= _d({83, 116, 121, 108, 101, 122, 72, 97, 105, 114, 83, 116, 117, 100, 105, 111, 67, 117, 115, 116, 111, 109, 101, 114}) then
-        repeat task.wait() until w.Occupied.Value and w.Occupied.Value.Name == _d({83, 116, 121, 108, 101, 122, 72, 97, 105, 114, 83, 116, 117, 100, 105, 111, 67, 117, 115, 116, 111, 109, 101, 114}) or not _h.f
-        if not _h.f then return end
-        n = w.Occupied.Value
+        firesignal(nextButton.Activated); task.wait()
+        firesignal(backButton.Activated); task.wait(0.2)
+        attempts = attempts + 1
+    until targetStation.InUse.Value == localPlayer or attempts > 15
+
+    if targetStation.InUse.Value == localPlayer then
+        utils:debugLog("Successfully claimed workstation.")
+        return targetStation
     end
-    local si, ci = _h.get_oi(n)
-    if not si or not ci then task.wait(1) return end
-    local sn = _u.f(_d({77, 105, 114, 114, 111, 114, 46, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114, 71, 85, 73, 46, 70, 114, 97, 109, 101, 46, 83, 116, 121, 108, 101, 46, 78, 101, 120, 116}), w)
-    local cn = _u.f(_d({77, 105, 114, 114, 111, 114, 46, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114, 71, 85, 73, 46, 70, 114, 97, 109, 101, 46, 67, 111, 108, 111, 114, 46, 78, 101, 120, 116}), w)
-    local d = _u.f(_d({77, 105, 114, 114, 111, 114, 46, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114, 71, 85, 73, 46, 70, 114, 97, 109, 101, 46, 68, 111, 110, 101}), w)
-    local l = _lib.flags.hair_farm_legit
-    for i = 2, si do _g[_strs[4]](sn.Activated) task.wait(l and _m.random(2, 4)/10 or 0.05) end
-    task.wait(l and 0.5 or 0.1)
-    for i = 2, ci do _g[_strs[4]](cn.Activated) task.wait(l and _m.random(2, 4)/10 or 0.05) end
-    task.wait(l and 0.5 or 0.1)
-    _g[_strs[4]](d.Activated)
-    repeat task.wait() until w.Occupied.Value ~= n or not _h.f
-    task.wait(1)
+    utils:debugLog("Failed to claim workstation.")
+    return nil
 end
-_h.tog = function(s)
-    _h.f = s
-    if _h.f then
-        local iw, cj = _j_u.is()
-        if not iw or cj ~= _d({83, 116, 121, 108, 101, 122, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114}) then
-            if iw then _j_u.en() task.wait(1) end
-            _j_u.st(_d({83, 116, 121, 108, 101, 122, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114}))
-            task.wait(2)
+
+--- The core function to complete a customer order with humanized actions.
+function hairdresserJob:completeCustomerOrder(workstation)
+    local npc = workstation.Occupied.Value
+    if not npc or npc.Name ~= "StylezHairStudioCustomer" then
+        utils:debugLog("Waiting for customer...")
+        repeat task.wait() until workstation.Occupied.Value and workstation.Occupied.Value.Name == "StylezHairStudioCustomer" or not self.isFarming
+        if not self.isFarming then return end
+        npc = workstation.Occupied.Value
+        utils:debugLog("New customer arrived.")
+        task.wait(math.random(8, 20) / 10) -- "Thinking time" before starting
+    end
+
+    local styleValue = utils:waitFor("Order.Style", npc)
+    local colorValue = utils:waitFor("Order.Color", npc)
+    if not styleValue or not colorValue then return end -- Error or customer left
+
+    local styleIndex = table.find(self.cachedFunctions.hairStyles, styleValue.Value)
+    local colorIndex = table.find(self.cachedFunctions.hairColors, colorValue.Value)
+    if not styleIndex or not colorIndex then return end
+
+    utils:debugLog(`Processing order: Style {styleIndex}, Color {colorIndex}`)
+    
+    local styleNext = utils:waitFor("Mirror.HairdresserGUI.Frame.Style.Next", workstation)
+    local styleBack = utils:waitFor("Mirror.HairdresserGUI.Frame.Style.Back", workstation)
+    local colorNext = utils:waitFor("Mirror.HairdresserGUI.Frame.Color.Next", workstation)
+    local colorBack = utils:waitFor("Mirror.HairdresserGUI.Frame.Color.Back", workstation)
+    local doneButton = utils:waitFor("Mirror.HairdresserGUI.Frame.Done", workstation)
+
+    -- Click through styles
+    for i = 2, styleIndex do
+        firesignal(styleNext.Activated)
+        task.wait(math.random(15, 30) / 100)
+        -- 5% chance to "overshoot" and correct
+        if math.random() < 0.05 then
+            utils:debugLog("Simulating style selection mistake...")
+            firesignal(styleNext.Activated); task.wait(math.random(20, 40) / 100)
+            firesignal(styleBack.Activated); task.wait(math.random(30, 50) / 100)
         end
-        _h.get_a()
-        task.spawn(function()
-            while _h.f do
-                local suc, err = pcall(_h.comp)
-                if not suc then _h.f = false; _lib.flags.hair_farm = false end
-                task.wait()
+    end
+    
+    task.wait(math.random(4, 9) / 10) -- Pause between style and color
+
+    -- Click through colors
+    for i = 2, colorIndex do
+        firesignal(colorNext.Activated)
+        task.wait(math.random(15, 30) / 100)
+    end
+
+    task.wait(math.random(5, 12) / 10) -- Final pause before finishing
+
+    firesignal(doneButton.Activated)
+    utils:debugLog("Order completed.")
+    
+    repeat task.wait() until workstation.Occupied.Value ~= npc or not self.isFarming
+end
+
+--- The main farming loop.
+function hairdresserJob:mainLoop()
+    -- Ensure we are on the right job
+    jobUtils:startShift("StylezHairdresser")
+    
+    -- Ensure functions are cached before starting
+    self:cacheGameFunctions()
+    if not self.cachedFunctions.doAction then
+        warn("[Bloxburg Grinders] Could not find core game functions. Stopping farm.")
+        self.isFarming = false
+        library.flags.hair_farm = false
+        return
+    end
+
+    while self.isFarming do
+        local success, err = pcall(function()
+            local workstation = self:selectAndClaimWorkstation()
+            if workstation then
+                self:completeCustomerOrder(workstation)
+                -- Take a "break" after finishing
+                local breakTime = math.random(20, 45) / 10 -- 2 to 4.5 second break
+                utils:debugLog(`Taking a {string.format("%.1f", breakTime)}s break.`)
+                task.wait(breakTime)
+            else
+                utils:debugLog("Failed to get a workstation, trying again in 5s.")
+                task.wait(5)
             end
+        end)
+
+        if not success then
+            utils:debugLog("An error occurred in the main loop:", err)
+            task.wait(5) -- Wait after an error before retrying
+        end
+    end
+end
+
+--- Toggles the farm on and off.
+function hairdresserJob:toggleFarming(state)
+    self.isFarming = state
+    utils:debugLog("Hairdresser autofarm toggled:", state)
+
+    if self.isFarming then
+        task.spawn(function()
+            self:mainLoop()
         end)
     end
 end
 
-_lib:create_window(_d({66, 108, 111, 120, 98, 117, 114, 103, 32, 71, 114, 105, 110, 100, 101, 114, 115}), 250)
-local ht = _lib:add_section(_d({83, 116, 121, 108, 101, 122, 32, 72, 97, 105, 114, 100, 114, 101, 115, 115, 101, 114}))
-ht:add_toggle(_d({65, 117, 116, 111, 102, 97, 114, 109}), "hair_farm", function(s) _h.tog(s) end)
-ht:add_toggle(_d({76, 101, 103, 105, 116, 32, 77, 111, 100, 101}), "hair_farm_legit", function() end):set_value(true)
+--==============================================================================
+-- UI SETUP
+--==============================================================================
+
+library:create_window("Bloxburg Grinders", 250)
+local hairTab = library:add_section("Stylez Hairdresser (Humanized)")
+
+hairTab:add_toggle("Autofarm", "hair_farm", function(state)
+    hairdresserJob:toggleFarming(state)
+end)
+
+hairTab:add_label("This version uses human-like behavior to avoid detection.")
+
+utils:debugLog("Bloxburg Grinders - Humanized Autofarm loaded!")
