@@ -12,7 +12,6 @@ getgenv().BLOXBURG_GRINDERS_LOADED = true
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local VirtualUserService = game:GetService("VirtualUser")
-local PathfindingService = game:GetService("PathfindingService")
 
 -- Player and Environment
 local localPlayer = Players.LocalPlayer
@@ -21,7 +20,7 @@ local ourIdentity = getthreadidentity and getthreadidentity() or 8
 -- Script Configuration
 local config = {
     debugEnabled = true,
-    uiLibraryUrl = "https://raw.githubusercontent.com/DUXFX/bloxburg-grinders/refs/heads/main/ui.lua"
+    uiLibraryUrl = "https://raw.githubusercontent.com/iopsec/bloxburg-grinders/main/ui.lua"
 }
 
 --==============================================================================
@@ -65,7 +64,6 @@ end
 local modules = utils:waitFor("PlayerScripts.Modules", localPlayer)
 local jobHandler = require(utils:waitFor("JobHandler", modules))
 local interactionHandler = require(utils:waitFor("InteractionHandler", modules))
-local remotes = utils:waitFor("Remotes", modules)
 
 -- Anti-AFK
 localPlayer.Idled:Connect(function()
@@ -110,32 +108,28 @@ end
 
 local hairdresserJob = {
     isFarming = false,
-    cachedFunctions = {}
+    cachedFunctions = {},
+    cachedWorkstationData = {}
 }
 
+--- Caches core game functions to avoid repeated memory scans.
 function hairdresserJob:cacheGameFunctions()
-    if self.cachedFunctions.doAction then return true end
+    if self.cachedFunctions.doAction then return end
     utils:debugLog("Searching for core game functions in memory (this runs only once)...")
     for _, func in ipairs(getgc(true)) do
         if typeof(func) == "function" then
             local info = getinfo(func)
             if info.name == "doAction" and info.source and string.find(info.source, "StylezHairdresser") then
                 if getupvalue(func, 3) == localPlayer then
-                    local styles = getupvalue(func, 6)
-                    local colors = getupvalue(func, 8)
-                    if type(styles) == "table" and type(colors) == "table" then
-                        self.cachedFunctions.doAction = func
-                        self.cachedFunctions.hairStyles = styles
-                        self.cachedFunctions.hairColors = colors
-                        utils:debugLog("Successfully cached and validated all required game functions.")
-                        return true
-                    end
+                    self.cachedFunctions.doAction = func
+                    self.cachedFunctions.hairStyles = getupvalue(func, 6)
+                    self.cachedFunctions.hairColors = getupvalue(func, 8)
+                    utils:debugLog("Successfully cached all required game functions.")
+                    return
                 end
             end
         end
     end
-    warn("[Bloxburg Grinders] CRITICAL: Could not cache hairdresser functions. Game update likely broke upvalue indexes.")
-    return false
 end
 
 function hairdresserJob:getWorkstations()
@@ -147,7 +141,7 @@ function hairdresserJob:getWorkstations()
         if station.Name == "Workstation" then
             if station.InUse.Value == localPlayer then
                 occupiedByPlayer = station
-                break 
+                break -- If we found our station, no need to check others
             elseif tostring(station.InUse.Value) == "nil" then
                 table.insert(available, station)
             end
@@ -156,18 +150,33 @@ function hairdresserJob:getWorkstations()
     return available, occupiedByPlayer
 end
 
+--- Selects a workstation with some randomness to appear more human.
 function hairdresserJob:selectAndClaimWorkstation()
     local available, myStation = self:getWorkstations()
-    if myStation then return myStation end 
+    if myStation then return myStation end -- Already have a station
 
-    if #available == 0 then return nil end
+    if #available == 0 then
+        utils:debugLog("No available workstations found.")
+        return nil
+    end
 
+    -- Sort by distance
     table.sort(available, function(a, b)
         return localPlayer:DistanceFromCharacter(a.Mirror.Position) < localPlayer:DistanceFromCharacter(b.Mirror.Position)
     end)
     
-    local targetStation = available[1]
+    -- Choose a station. 70% chance to pick the closest, 30% to pick the 2nd/3rd closest.
+    local targetStation
+    local choice = math.random()
+    if choice < 0.7 or #available < 2 then
+        targetStation = available[1]
+    else
+        targetStation = available[math.min(#available, math.random(2, 3))]
+    end
     
+    utils:debugLog("Selected workstation:", targetStation:GetFullName())
+    
+    -- Claim it
     (localPlayer.Character or localPlayer.CharacterAdded:Wait()).Humanoid:MoveTo(targetStation.Mat.Position)
     local nextButton = utils:waitFor("Mirror.HairdresserGUI.Frame.Style.Next", targetStation)
     local backButton = utils:waitFor("Mirror.HairdresserGUI.Frame.Style.Back", targetStation)
@@ -183,26 +192,31 @@ function hairdresserJob:selectAndClaimWorkstation()
         utils:debugLog("Successfully claimed workstation.")
         return targetStation
     end
-    
+    utils:debugLog("Failed to claim workstation.")
     return nil
 end
 
+--- The core function to complete a customer order with humanized actions.
 function hairdresserJob:completeCustomerOrder(workstation)
     local npc = workstation.Occupied.Value
     if not npc or npc.Name ~= "StylezHairStudioCustomer" then
+        utils:debugLog("Waiting for customer...")
         repeat task.wait() until workstation.Occupied.Value and workstation.Occupied.Value.Name == "StylezHairStudioCustomer" or not self.isFarming
         if not self.isFarming then return end
         npc = workstation.Occupied.Value
-        task.wait(math.random(8, 20) / 10)
+        utils:debugLog("New customer arrived.")
+        task.wait(math.random(8, 20) / 10) -- "Thinking time" before starting
     end
 
     local styleValue = utils:waitFor("Order.Style", npc)
     local colorValue = utils:waitFor("Order.Color", npc)
-    if not styleValue or not colorValue then return end
+    if not styleValue or not colorValue then return end -- Error or customer left
 
     local styleIndex = table.find(self.cachedFunctions.hairStyles, styleValue.Value)
     local colorIndex = table.find(self.cachedFunctions.hairColors, colorValue.Value)
     if not styleIndex or not colorIndex then return end
+
+    utils:debugLog(`Processing order: Style {styleIndex}, Color {colorIndex}`)
     
     local styleNext = utils:waitFor("Mirror.HairdresserGUI.Frame.Style.Next", workstation)
     local styleBack = utils:waitFor("Mirror.HairdresserGUI.Frame.Style.Back", workstation)
@@ -210,33 +224,43 @@ function hairdresserJob:completeCustomerOrder(workstation)
     local colorBack = utils:waitFor("Mirror.HairdresserGUI.Frame.Color.Back", workstation)
     local doneButton = utils:waitFor("Mirror.HairdresserGUI.Frame.Done", workstation)
 
+    -- Click through styles
     for i = 2, styleIndex do
         firesignal(styleNext.Activated)
         task.wait(math.random(15, 30) / 100)
+        -- 5% chance to "overshoot" and correct
         if math.random() < 0.05 then
+            utils:debugLog("Simulating style selection mistake...")
             firesignal(styleNext.Activated); task.wait(math.random(20, 40) / 100)
             firesignal(styleBack.Activated); task.wait(math.random(30, 50) / 100)
         end
     end
     
-    task.wait(math.random(4, 9) / 10)
+    task.wait(math.random(4, 9) / 10) -- Pause between style and color
 
+    -- Click through colors
     for i = 2, colorIndex do
         firesignal(colorNext.Activated)
         task.wait(math.random(15, 30) / 100)
     end
 
-    task.wait(math.random(5, 12) / 10)
+    task.wait(math.random(5, 12) / 10) -- Final pause before finishing
 
     firesignal(doneButton.Activated)
+    utils:debugLog("Order completed.")
     
     repeat task.wait() until workstation.Occupied.Value ~= npc or not self.isFarming
 end
 
+--- The main farming loop.
 function hairdresserJob:mainLoop()
+    -- Ensure we are on the right job
     jobUtils:startShift("StylezHairdresser")
     
-    if not self:cacheGameFunctions() then
+    -- Ensure functions are cached before starting
+    self:cacheGameFunctions()
+    if not self.cachedFunctions.doAction then
+        warn("[Bloxburg Grinders] Could not find core game functions. Stopping farm.")
         self.isFarming = false
         library.flags.hair_farm = false
         return
@@ -247,168 +271,46 @@ function hairdresserJob:mainLoop()
             local workstation = self:selectAndClaimWorkstation()
             if workstation then
                 self:completeCustomerOrder(workstation)
-                task.wait(math.random(20, 45) / 10)
+                -- Take a "break" after finishing
+                local breakTime = math.random(20, 45) / 10 -- 2 to 4.5 second break
+                utils:debugLog(`Taking a {string.format("%.1f", breakTime)}s break.`)
+                task.wait(breakTime)
             else
+                utils:debugLog("Failed to get a workstation, trying again in 5s.")
                 task.wait(5)
             end
         end)
-        if not success then task.wait(5) end
+
+        if not success then
+            utils:debugLog("An error occurred in the main loop:", err)
+            task.wait(5) -- Wait after an error before retrying
+        end
     end
 end
 
+--- Toggles the farm on and off.
 function hairdresserJob:toggleFarming(state)
     self.isFarming = state
     utils:debugLog("Hairdresser autofarm toggled:", state)
-    if self.isFarming then task.spawn(function() self:mainLoop() end) end
-end
 
---==============================================================================
--- PIZZA DELIVERY JOB MODULE (INSTANT TELEPORT)
---==============================================================================
-
-local pizzaDeliveryJob = {
-    STATE = { IDLE = 0, FETCHING_PIZZA = 1, DELIVERING = 2 },
-    pizzaPlanetLocation = CFrame.new(1169, 15, 273),
-    currentStatus = ""
-}
-pizzaDeliveryJob.currentState = pizzaDeliveryJob.STATE.IDLE
-
-function pizzaDeliveryJob:setStatus(status)
-    self.currentStatus = status
-    if library.labels.pizza_status then
-        library.labels.pizza_status.Text = "Status: " .. status
-    end
-    utils:debugLog("Pizza Job Status:", status)
-end
-
-function pizzaDeliveryJob:teleport(targetCFrame)
-    local character = localPlayer.Character
-    if not character or not character.PrimaryPart then return end
-    character.PrimaryPart.CFrame = targetCFrame
-end
-
-function pizzaDeliveryJob:getPizza()
-    self:setStatus("Returning to Pizza Planet")
-    self:teleport(self.pizzaPlanetLocation)
-    task.wait(0.2)
-
-    local pizzaBox = localPlayer.Character and localPlayer.Character:FindFirstChild("Pizza Box")
-    if pizzaBox then pizzaBox:Destroy() end
-
-    local pizzaStack = utils:waitFor("Workspace.Environment.Locations.PizzaPlanet.Conveyor.MovingBoxes")
-    if not pizzaStack or #pizzaStack:GetChildren() == 0 then
-        self:setStatus("No pizzas available, waiting...")
-        return
-    end
-    
-    self:setStatus("Requesting pizza & customer")
-    self.currentState = self.STATE.FETCHING_PIZZA
-    
-    setthreadidentity(2)
-    interactionHandler:ShowMenu(pizzaStack:GetChildren()[1], pizzaStack:GetChildren()[1].Position, pizzaStack:GetChildren()[1])
-    firesignal(utils:waitFor("PlayerGui._interactUI.Use.Button", localPlayer).Activated)
-    setthreadidentity(ourIdentity)
-end
-
-function pizzaDeliveryJob:deliverPizza()
-    if not self.currentCustomer or not self.currentCustomer.PrimaryPart then
-        self:setStatus("Error: Invalid customer data")
-        self.currentState = self.STATE.IDLE
-        return
-    end
-
-    self:setStatus("Teleporting to customer")
-    local customerRoot = self.currentCustomer.PrimaryPart
-    local targetPosition = customerRoot.CFrame * CFrame.new(0, 0, 5)
-    self:teleport(targetPosition)
-    task.wait(0.5)
-
-    self:setStatus("Giving pizza to customer")
-    setthreadidentity(2)
-    interactionHandler:ShowMenu(self.currentCustomer, customerRoot.Position, customerRoot)
-    firesignal(utils:waitFor("PlayerGui._interactUI.Give.Button", localPlayer).Activated)
-    setthreadidentity(ourIdentity)
-    
-    self.currentState = self.STATE.IDLE
-    self.currentCustomer = nil
-end
-
-function pizzaDeliveryJob:mainLoop()
-    jobUtils:startShift("PizzaPlanetDelivery")
-    self.currentState = self.STATE.IDLE
-
-    while self.isFarming do
-        local success, err = pcall(function()
-            if self.currentState == self.STATE.IDLE then
-                self:getPizza()
-            elseif self.currentState == self.STATE.DELIVERING then
-                self:deliverPizza()
-            end
-            task.wait(1) -- Main loop heartbeat
-        end)
-        if not success then
-            self:setStatus("Error, resetting job...")
-            utils:debugLog("Error in Pizza Delivery loop:", err)
-            self.currentState = self.STATE.IDLE
-            task.wait(5)
-        end
-    end
-    self:setStatus("Disabled")
-end
-
-function pizzaDeliveryJob:toggleFarming(state)
-    self.isFarming = state
-    utils:debugLog("Pizza Delivery autofarm toggled:", state)
     if self.isFarming then
-        task.spawn(function() self:mainLoop() end)
-    else
-        self:setStatus("Disabled")
-        self.currentState = self.STATE.IDLE
+        task.spawn(function()
+            self:mainLoop()
+        end)
     end
 end
-
---==============================================================================
--- METAMETHOD HOOKS (FOR PIZZA DELIVERY)
---==============================================================================
-
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    
-    if pizzaDeliveryJob.currentState == pizzaDeliveryJob.STATE.FETCHING_PIZZA and method == "InvokeServer" and self.Name == "Remotes" then
-        local args = {...}
-        if type(args[2]) == "table" and args[2].Action == "Take" and args[2].Object and args[2].Object.Name == "Pizza Box" then
-            local result = oldNamecall(self, ...)
-            if typeof(result) == "Instance" and result:IsA("Model") then
-                utils:debugLog("Hook captured customer:", result.Name)
-                pizzaDeliveryJob.currentCustomer = result
-                pizzaDeliveryJob.currentState = pizzaDeliveryJob.STATE.DELIVERING
-            end
-            return result
-        end
-    end
-
-    return oldNamecall(self, ...)
-end)
 
 --==============================================================================
 -- UI SETUP
 --==============================================================================
 
 library:create_window("Bloxburg Grinders", 250)
-
--- Hairdresser Tab
 local hairTab = library:add_section("Stylez Hairdresser (Humanized)")
+
 hairTab:add_toggle("Autofarm", "hair_farm", function(state)
     hairdresserJob:toggleFarming(state)
 end)
-hairTab:add_label("Uses human-like behavior to avoid detection.")
 
--- Pizza Delivery Tab
-local pizzaTab = library:add_section("Pizza Delivery (Instant TP)")
-pizzaTab:add_toggle("Autofarm", "pizza_farm", function(state)
-    pizzaDeliveryJob:toggleFarming(state)
-end)
-library.labels.pizza_status = pizzaTab:add_label("Status: Disabled")
+hairTab:add_label("This version uses human-like behavior to avoid detection.")
 
-utils:debugLog("Bloxburg Grinders - Multi-Job Autofarm loaded!")
+utils:debugLog("Bloxburg Grinders - Humanized Autofarm loaded!")
